@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 # 2021-03-21 ph Created
+# 2021-03-24 ph up to date with Camera()
 
 """
     unittests.py
@@ -22,7 +23,7 @@ class Tests(unittest.TestCase):
 
     def test_001(self):
         sg = Singulersum()
-        cam = sg.camera(1, 0, 0, 0, 0, 0)
+        cam = sg.camera(1, 0, 0, 0, 0, 0, name="cam1")
         P = (1, 0, 0)
         print("P:", cam.vec_show(P))
         P_prime = cam.rotate(P, 90, 0)

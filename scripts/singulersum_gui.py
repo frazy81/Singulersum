@@ -23,6 +23,8 @@
     It "features" left mouse click and hold interaction to fly around the scene (in x, y and z-axis). It also features a 2nd mouse click and hold interaction to move closer into the scene or move out.
 
     Almost all menu items are not yet implemented...
+
+    To see some other examples, go into the examples menu and choose one.
 """
 
 # TODO: maybe checkout pyautogui for absolute mouse coords

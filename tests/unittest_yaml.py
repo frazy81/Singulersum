@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 # 2021-03-23 ph Created
+# 2021-03-24 ph up to date with current SingulersumYaml
 
 """
     yaml.py
@@ -19,6 +20,10 @@ import unittest
 import dumper
 
 class Tests(unittest.TestCase):
+
+    def callback(self, event, **args):
+        if event=="set":
+            setattr(self, args["name"], args["value"])
 
     def test_001(self):
         print("test_001:")
@@ -50,7 +55,7 @@ animator:
 
     def test_002(self):
         print("test_002:")
-        sg = Singulersum(1.0, 1.0, 1.0)
+        sg = Singulersum(1.0, 1.0, 1.0, callback=self.callback)
         test = """
 gui:
     isPlaying: True
@@ -114,7 +119,7 @@ default: cam
 
         data = sg.yaml(data=test)
 
-        self.assertEqual(data["gui"]["isPlaying"], True)
+        print(data)
 
         self.assertEqual(sg.scale[0], 5)
         self.assertEqual(sg.scale[1], 5)
@@ -142,26 +147,31 @@ default: cam
 
     def test_003(self):
         print("test_003:")
-        sg = Singulersum(1.0, 1.0, 1.0)
+        sg = Singulersum(1.0, 1.0, 1.0, callback=self.callback)
         file = "../yaml/sine_waves.yaml"
+
+        self.animated=False
 
         data = sg.yaml(file=file)
 
-        self.assertEqual(data["gui"]["isPlaying"], True)
-        self.assertEqual(data["gui"]["animated"], True)
+        self.assertEqual(self.animated, True)
 
         print("test_003 end.")
         print()
 
     def test_004(self):
         print("test_004:")
-        sg = Singulersum(1.0, 1.0, 1.0)
+        sg = Singulersum(1.0, 1.0, 1.0, callback=self.callback)
         file = "../yaml/tiny_house.yaml"
+
+        self.animated=False
 
         data = sg.yaml(file=file)
 
-        self.assertEqual(data["gui"]["isPlaying"], True)
-        self.assertEqual(data["gui"]["animated"], True)
+        print(data)
+
+        self.assertEqual(self.animated, True)
+        self.assertEqual(self.camera, "cam1")
         print("test_004 end.")
         print()
 
