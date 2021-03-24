@@ -5,6 +5,8 @@
 """
     singulersum_video.py
 
+    2021-03-24 ph Created by Philipp Hasenfratz
+
     loading a Singulersum YAML file and create a video from it.
     This script currently needs ffmpeg to create the videos.
 

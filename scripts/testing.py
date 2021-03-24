@@ -8,6 +8,8 @@
 """
     testing.py
 
+    2021-03-05 ph Created by Philipp Hasenfratz
+
     testing.py is "almost" the same GUI as singulersum_gui.py ("the main viewer"). Use it
     to quickly setup a scene and test it.
 """

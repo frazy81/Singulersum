@@ -25,6 +25,8 @@
 """
     class Singulersum.Singulersum()
 
+    2021-03-05 ph Created by Philipp Hasenfratz
+
     Singulersum() is the "universe" of Singulersum where all 3D objects are placed in.
 
     sg = Singulersum(scale=(5.0, 5.0, 5.0))

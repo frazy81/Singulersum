@@ -5,7 +5,9 @@
 """
     linsys.py
 
-    not in use.
+    2021-03-08 ph Created by Philipp Hasenfratz
+
+    Not in use. tried to find my own algorithm to solve linear equation systems.
 
     some tests to solve linear equation systems.
 """

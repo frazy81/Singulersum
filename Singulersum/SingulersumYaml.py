@@ -3,6 +3,8 @@
 """
     class Singulersum.SingulersumYaml()
 
+    2021-03-22 ph Created by Philipp Hasenfratz
+
     an importer for yaml based Singulersum scenery definition files.
 
     NOTE: callback event's are fired from Singulersum.py (when sg.yaml() is called)

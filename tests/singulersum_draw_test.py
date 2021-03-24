@@ -5,6 +5,8 @@
 """
     singulersum_draw_test.py
 
+    2021-03-05 ph Created by Philipp Hasenfratz
+
     Testing and debugging the Draw2D() class.
 """
 

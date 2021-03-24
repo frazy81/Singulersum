@@ -5,7 +5,10 @@
 """
     array_fast_test.py
 
-    used to find the best way to initialize and reinitialize the Draw2D() image buffer
+    2021-03-15 ph Created by Philipp Hasenfratz
+
+    Used to find the best way to initialize and reinitialize the Draw2D() image buffer.
+    The first version was incredibly slow (needed 0.5s for each image/frame). So I needed a fast and easy performance improvement in array reinitializing.
 """
 
 # need a very fast way to reinitialize an array. Current method takes up to 0.5s for each

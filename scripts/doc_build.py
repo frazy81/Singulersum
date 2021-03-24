@@ -3,6 +3,10 @@
 # 2021-03-24 ph Created
 
 """
+    doc_build.py
+
+    2021-03-24 ph Created by Philipp Hasenfratz
+
     quick and dirty tool to build the videos in ./doc
 
     scans through all .yaml files in ../yaml and creates equally named files with .mkv

@@ -5,6 +5,8 @@
 """
     Singulersum.VectorMath()
 
+    2021-03-14 ph Created by Philipp Hasenfratz
+
     Singulersum.Camera class highly depend on vector geometry/calculus, linear equation systems (linear algebra), matrix calculations etc. This calculus is partly taken out of the Camera class to make it more readable and is placed in this class (Camera inherits from this class).
 """
 

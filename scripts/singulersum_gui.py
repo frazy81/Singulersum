@@ -13,7 +13,9 @@
 #               can be removed on mouse action
 
 """
-    class SingulersumGUI()
+    class SingulersumGUI() and program singulersum_gui.py
+
+    2021-03-05 ph Created by Philipp Hasenfratz
 
     the SingulersumGUI class and the singulersum_gui.py script implement a "viewer" for
     Singulersum using Tkinter.

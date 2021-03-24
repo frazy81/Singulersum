@@ -4,6 +4,8 @@
 """
     class Singulersum.Debug()
 
+    2021-03-13 ph Created by Philipp Hasenfratz
+
     class Debug implements different "timers" to detect performance bottlenecks and is the base class to implement debugging.
 """
 

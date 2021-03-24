@@ -11,6 +11,8 @@
 """
     class Singulersum.Draw2D()
 
+    2021-03-11 ph Created by Philipp Hasenfratz
+
     Draw2D is a 2 dimensional painting class that is used in Singulersum to draw the 2D image. It features points, lines, polynom(-fill) with optional z-Buffering, color and alpha-channel (for instance planes may be half transparent and not changing the z-Index).
 
     To get something totally in front, use zIndex=0.0 (distance viewer->object = 0.0)
