@@ -9,10 +9,10 @@ First some important notes:
 
 If you're looking for a 3D computer graphics software to create or visualize projects, I assume that you're better suited with something like [Blender](https://www.blender.org/), GLC Player, Meshlab, Viewstl or something alike. For mathematical illustration you may want to look at [Geogebra](https://www.geogebra.org/)
 
-Why Singulversum
+Why did I create Singulersum
  * it is and was fun to create. And a challenge!
- * a graphics card and it's libraries offer all of that functionality out of the box. How ever I wanted to see HOW it actually works, doing it all myself. Now I understand z-fighting ;-) [and there's still z-fighting in Singulersum...]
- * it's cool to see what one can achieve, given a bit of technical and mathematical background (and time of course)
+ * a graphics card and it's libraries offer all of that functionality out of the box. How ever: I wanted to see HOW it actually works, doing it all myself.
+ * it's cool to see what one can achieve
  * main aim is to share and/or create interest. You can do something if you like to! Anything you want!
  * in case you're interested in computer graphics or 3D graphics or projections. Take a look at the source code. But don't take it as ground truth! I'm not a graphics expert. I was just curious if I can do it with as little help as possible...
 
