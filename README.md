@@ -11,20 +11,20 @@ If you're looking for a 3D computer graphics software to create or visualize pro
 
 Why Singulversum
  * it is and was fun to create. And a challenge!
- * a graphics card and it's libraries offer all that out of the box. Fine, use it. I wanted to see HOW it actually works. Now I understand z-fighting ;-) [and there's still z-fighting in Singulersum...]
- * it's cool to see what one can achieve, given a bit of technical and mathematical background
- * main aim is to share and/or create interest. You can do something if you like to!
- * in case you're interested in computer graphics or 3D graphics and projections. Take a look at the source code. But don't take it as ground truth! I'm not a graphics expert. I was just curious if I can do it ;-)
+ * a graphics card and it's libraries offer all of that functionality out of the box. How ever I wanted to see HOW it actually works, doing it all myself. Now I understand z-fighting ;-) [and there's still z-fighting in Singulersum...]
+ * it's cool to see what one can achieve, given a bit of technical and mathematical background (and time of course)
+ * main aim is to share and/or create interest. You can do something if you like to! Anything you want!
+ * in case you're interested in computer graphics or 3D graphics or projections. Take a look at the source code. But don't take it as ground truth! I'm not a graphics expert. I was just curious if I can do it with as little help as possible...
 
 Some examples, videos and pictures:
 
-/scripts/singulersum_gui.py, a Tkinter based GUI for Singulersum
+/scripts/singulersum_gui.py, a Tkinter based GUI for Singulersum 3D rendering engine
 ![singulersum_gui.py](/docs/singulersum_gui.png)
 
-Viewing binary and textual STL files:
+Visualize binary and textual STL files (currently without color support):
 ![STL-Viewer](/docs/falcon.png)
 
-Creating animation videos using yaml configuration files (/scripts/singulersum_video.py)
+Creation of animation videos using yaml configuration files (/scripts/singulersum_video.py, using /yaml/sphericon_ascii_stl.yaml)
 ![YAML](/docs/yaml.png)
 
 here some videos, created using Singulersum (/scripts/singulersum_video.py)
@@ -36,7 +36,7 @@ video of the function z=sin(x)+sin(y):
 Creating graphical representations of mathematical functions
 ![heart-curve](/docs/heart.png)
 
-math calculus behind this software (one of 16 pages):
+math calculus behind this software (one out of 16 pages):
 ![math](/docs/original_note_example.jpg)
 
 My name is Philipp Hasenfratz (philipp.hasenfratz at gmx.net). I'm a software developer based in Switzerland. This project was a fun side project of mine. I was wondering if I still had the mathematical skills to create and develop a 3D rendering engine prototype without any external tools, libraries, help or a GPU.
