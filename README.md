@@ -7,7 +7,7 @@ First some important notes:
  * this software is BUGGY and incomplete. It's a prototype!
  * this software is not meant for production use
 
-If you're looking for a 3D computer graphics software to create or visualize projects, I assume that you're better suited with something like ![Blender](https://www.blender.org/), GLC Player, Meshlab, Viewstl or something alike. For mathematical illustration you may want to look at ![Geogebra](https://www.geogebra.org/)
+If you're looking for a 3D computer graphics software to create or visualize projects, I assume that you're better suited with something like [Blender](https://www.blender.org/), GLC Player, Meshlab, Viewstl or something alike. For mathematical illustration you may want to look at [Geogebra](https://www.geogebra.org/)
 
 Why Singulversum
  * it is and was fun to create. And a challenge!
@@ -26,7 +26,11 @@ Viewing binary and textual STL files:
 
 Creating animation videos using yaml configuration files (/scripts/singulersum_video.py)
 ![YAML](/docs/yaml.png)
+
+here some videos, created using Singulersum (/scripts/singulersum_video.py)
 ![video](/outputs/millennium_falcon_stl.mov)
+
+video of the function z=sin(x)+sin(y):
 ![video](/outputs/sine_waves.mov)
 
 Creating graphical representations of mathematical functions
