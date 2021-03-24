@@ -1,0 +1,34 @@
+# 2021-03-24 ph Created
+
+gui:
+    animated: True
+    stop: 1.5
+    camera: cam1
+sg:
+    scale: [5.0, 5.0, 5.0]
+cs:
+    type: coordinatesystem
+animator:
+    # see Singulersum.py, "def animation()" for details on how to configure
+    type: animation
+    stop: 1.5
+    start: 0.0
+    begin: [1.3, 1.0, 0.5]
+    end: [1.0, 0.2, 0.2]
+    x: begin[0] + (time*(end[0] - begin[0]))
+    y: begin[1] + (time*(end[1] - begin[1]))
+    z: begin[2] + (time*(end[2] - begin[2]))
+cam1:
+    type: camera
+    position: [1.3, 0.6, 0.5]
+    lookat: [0.0, 0.0, 0.0]
+    update: animator
+cube:
+    type: cube
+    x: 0
+    y: 0
+    z: 0
+    r: 1.0
+    amount: 20
+    size: 0.2
+default: cam

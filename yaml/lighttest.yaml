@@ -1,0 +1,33 @@
+# 2021-03-24 ph Created
+
+gui:
+    animated: True
+    stop: 1.5
+    camera: cam1
+sg:
+    scale: [5.0, 5.0, 5.0]
+cs:
+    type: coordinatesystem
+animator:
+    # see Singulersum.py, "def animation()" for details on how to configure
+    type: animation
+    stop: 20
+    start: 0.0
+    radius: 1.0
+    azimuth: time*30
+    altitude: !!str 10.0
+cam1:
+    type: camera
+    position: [1.0, 0.2, 0.2]
+    lookat: [0.0, 0.0, 0.0]
+    update: animator
+lighttest:
+    type: polygon
+    points: [
+        [0, 0, 0],
+        [0, 1, 0],
+        [0, 1, 1],
+        [0, 0, 1]
+    ]
+    place: [0.0, 0.0, 0.0]
+    size: 1.0

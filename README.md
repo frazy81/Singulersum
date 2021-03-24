@@ -1,1 +1,41 @@
-# Singulersum
+# Singulersum - 3D rendering engine
+
+Singulersum is a prototype 3D rendering engine. It aims to be able to visualize STL files, freely defined 3D functions as well as other objects (like points, lines, planes, spheres, polygons) in a 3D environment.
+
+First some important notes:
+ * this software is SLOW! It runs on the CPU (not a GPU) and is single threaded! Performance was NOT intended.
+ * this software is BUGGY and incomplete. It's a prototype!
+ * this software is not meant for production use
+
+If you're looking for a 3D computer graphics software to create or visualize projects, I assume that you're better suited with something like ![Blender](https://www.blender.org/), GLC Player, Meshlab, Viewstl or something alike. For mathematical illustration you may want to look at ![Geogebra](https://www.geogebra.org/)
+
+Why Singulversum
+ * it is and was fun to create. And a challenge!
+ * a graphics card and it's libraries offer all that out of the box. Fine, use it. I wanted to see HOW it actually works. Now I understand z-fighting ;-) [and there's still z-fighting in Singulersum...]
+ * it's cool to see what one can achieve, given a bit of technical and mathematical background
+ * main aim is to share and/or create interest. You can do something if you like to!
+ * in case you're interested in computer graphics or 3D graphics and projections. Take a look at the source code. But don't take it as ground truth! I'm not a graphics expert. I was just curious if I can do it ;-)
+
+Some examples, videos and pictures:
+
+/scripts/singulersum_gui.py, a Tkinter based GUI for Singulersum
+![singulersum_gui.py](/docs/singulersum_gui.png)
+
+Viewing binary and textual STL files:
+![STL-Viewer](/docs/falcon.png)
+
+Creating animation videos using yaml configuration files (/scripts/singulersum_video.py)
+![YAML](/docs/yaml.png)
+![video](/outputs/millennium_falcon_stl.mov)
+![video](/outputs/sine_waves.mov)
+
+Creating graphical representations of mathematical functions
+![heart-curve](/docs/heart.png)
+
+math calculus behind this software (one of 16 pages):
+![math](/docs/original_note_example.jpg)
+
+My name is Philipp Hasenfratz (philipp.hasenfratz at gmx.net). I'm a software developer based in Switzerland. This project was a fun side project of mine. I was wondering if I still had the mathematical skills to create and develop a 3D rendering engine prototype without any external tools, libraries, help or a GPU.
+After 20 years out of school I was a bit rusty doing the math, but I got it back again with some help of wikipedia of course. But the main objective was to develop the whole math myself and for most part I did exactly that. So the math behind Singulersum is most probably not the same as in commonly used 3D software...
+
+After two weeks and roughly 200 hours of work the prototype was ready and worked (more or less)...
