@@ -11,6 +11,9 @@
 # 2021-03-24 ph corrected CanvasInteraction so that it works with new loaded yaml also
 #               new camera needed to be setup in CanvasInteract, so that updateFunction
 #               can be removed on mouse action
+# 2021-03-25 ph file new/open
+# 2021-03-25 ph menu remarks if not implemented
+# 2021-03-25 ph getopt
 
 """
     class SingulersumGUI() and program singulersum_gui.py
@@ -32,19 +35,22 @@
 # TODO: export current scenery as .stl
 # TODO: after mouse operation the updateFunction might be reinitialized so that rewind/
 #       play works again.
+# TODO: logfile yes/no
+# TODO: Sphericon: color intensify (deactivate luminescense)
 
 import sys
 sys.path.append("..")
 from Singulersum.Singulersum import Singulersum
 from tkinter import *
+from tkinter import filedialog
 from PIL.ImageTk import PhotoImage, Image
 from math import *
 import time
-import struct
+import getopt
 
 class SingulersumGUI(Tk):
 
-    def __init__(self):
+    def __init__(self, verbose=True, exitImmediate=False, quitAfterAnimation=False, inputFile=None):
         super().__init__()
 
         # configureCanvas is changing these to the actual canvas size
@@ -52,8 +58,13 @@ class SingulersumGUI(Tk):
         self.height = 2048
         self.cam = None
 
+        self.verbose = verbose
+        self.quitAfterAnimation = quitAfterAnimation
+
         self.isShowing = True      # self.show() running?
         self.isTerminating = False
+        if exitImmediate is True:
+            self.isTerminating = True
         self.animated = False       # this is set by a yaml. calling callback()
         self.framesShown = 0
         self.isPlaying = True
@@ -66,7 +77,16 @@ class SingulersumGUI(Tk):
         self.sg = Singulersum(scale=(5.0, 5.0, 5.0), callback=self.callback)
         self.sg.logfile("./singulersum_gui.log")
 
-        self.sg.yaml("../yaml/lighttest.yaml")
+        # setup default camera
+        self.cam = self.sg.camera(1.0, 0.3, 0.4, 0.0, 0.0, 0.0, name="default")
+        self.camera = "default"
+
+        if inputFile is not None:
+            # load the file
+            self.open(inputFile)
+        else:
+            # load default
+            self.sg.yaml("../yaml/lighttest.yaml")
 
         self.cam = self.sg.cameras[self.camera]
         self.canvasInteract.camera(self.cam)    # same in callback()!!!
@@ -93,18 +113,7 @@ class SingulersumGUI(Tk):
                     self.isPlaying=False
             if args["name"]=="camera":
                 # set the camera, so that the GUI knows which camera to get images from.
-                current_width = self.width
-                current_height = self.height
-                if self.cam is not None:
-                    current_width = self.cam.width
-                    current_height = self.cam.height
-                # singulversum updated it's default camera, so we need to setup the new
-                # camera and make a new CanvasInteract for mouse operations.
-                self.cam = self.sg.cameras[args["value"]]
-                # initialize camera with the current canvas width/height
-                self.cam.width = current_width
-                self.cam.height = current_height
-                self.canvasInteract.camera(self.cam)
+                self.newCamera(args["value"])
         elif event=="animation_start":
             # TODO: this is nowhere fired!
             self.play()
@@ -116,7 +125,24 @@ class SingulersumGUI(Tk):
             self.sg.setTime(0.0)
             self.update()
             self.update_idletasks()
+            if self.quitAfterAnimation is True:
+                print("quitAfterAnimation is True: quit application now.")
+                self.quit()
         pass
+
+    def newCamera(self, value):
+        current_width = self.width
+        current_height = self.height
+        if self.cam is not None:
+            current_width = self.cam.width
+            current_height = self.cam.height
+        # singulversum updated it's default camera, so we need to setup the new
+        # camera and make a new CanvasInteract for mouse operations.
+        self.cam = self.sg.cameras[value]
+        # initialize camera with the current canvas width/height
+        self.cam.width = current_width
+        self.cam.height = current_height
+        self.canvasInteract.camera(self.cam)
 
     def showImage(self):
         self.framesShown += 1
@@ -205,8 +231,8 @@ class SingulersumGUI(Tk):
         filemenu = Menu(menubar, tearoff=0)
         filemenu.add_command(label="New", command=lambda: self.newFile())
         filemenu.add_command(label="Open", command=lambda: self.openFile())
-        filemenu.add_command(label="Save", command=lambda: self.notImpl())
-        filemenu.add_command(label="Save as...", command=lambda: self.notImpl())
+        filemenu.add_command(label="Save (not implemented)", command=lambda: self.notImpl())
+        filemenu.add_command(label="Save as... (not implemented)", command=lambda: self.notImpl())
         filemenu.add_command(label="Close", command=lambda: self.newFile())
 
         filemenu.add_separator()
@@ -215,15 +241,15 @@ class SingulersumGUI(Tk):
         menubar.add_cascade(label="File", menu=filemenu)
 
         editmenu = Menu(menubar, tearoff=0)
-        editmenu.add_command(label="Undo", command=lambda: self.notImpl())
+        editmenu.add_command(label="Undo (not implemented)", command=lambda: self.notImpl())
 
         editmenu.add_separator()
 
-        editmenu.add_command(label="Cut", command=lambda: self.notImpl())
-        editmenu.add_command(label="Copy", command=lambda: self.notImpl())
-        editmenu.add_command(label="Paste", command=lambda: self.notImpl())
-        editmenu.add_command(label="Delete", command=lambda: self.notImpl())
-        editmenu.add_command(label="Select All", command=lambda: self.notImpl())
+        editmenu.add_command(label="Cut (not implemented)", command=lambda: self.notImpl())
+        editmenu.add_command(label="Copy (not implemented)", command=lambda: self.notImpl())
+        #editmenu.add_command(label="Paste", command=lambda: self.notImpl())
+        #editmenu.add_command(label="Delete", command=lambda: self.notImpl())
+        #editmenu.add_command(label="Select All", command=lambda: self.notImpl())
         menubar.add_cascade(label="Edit", menu=editmenu)
 
         examplesmenu = Menu(menubar, tearoff=0)
@@ -247,7 +273,7 @@ class SingulersumGUI(Tk):
         menubar.add_cascade(label="Settings", menu=settings)
 
         helpmenu = Menu(menubar, tearoff=0)
-        helpmenu.add_command(label="Help Index", command=lambda: self.notImpl())
+        helpmenu.add_command(label="Help Index (not implemented)", command=lambda: self.notImpl())
         helpmenu.add_command(label="About...", command=lambda: self.help())
         menubar.add_cascade(label="Help", menu=helpmenu)
 
@@ -348,18 +374,35 @@ class SingulersumGUI(Tk):
         self.sg.reset()
         self.sg.yaml(file)
         self.isPlaying=True
+        self.isShowing=True
+
+    def openStl(self, file):
+        print("TkGUI(): open stl file", file)
+        self.sg.reset()
+        self.sg.stl(file)
+        self.isPlaying=False
+        self.isShowing=True
 
     def newFile(self):
-        self.isPaused=True
-        sg = Singulersum(scalex=1.0, scaley=1.0, scalez=1.0)
-        self.sg = sg
-        #sg.light(0,0,-1,"parallel",1)
-        self.cam = sg.camera( 1.3, 0.2, 0.3, 0.0, 0.0, 0.0, fov=140, width=2048, height=int(2048/4*3))
-        sg.coordinateSystem()
+        print("TkGUI(): newFile")
+        self.pause()
+        self.sg.reset()
+        self.sg.setTime(0)
+        self.isShowing=True
+        self.isPlaying=False
 
-        sg.setTime(0)
+    def open(self, file):
+        if file[-4:]==".stl":
+            self.openStl(file)
+        elif file[-5:]==".yaml":
+            self.openYaml(file)
+        else:
+            self.debug("don't know how to handle this file type (must be .yaml or .stl)", file)
 
-        self.animate()
+    def openFile(self):
+        dlg = filedialog.Open(self, filetypes=(("STL files", "*.stl"), ("YAML files", "*.yaml"), ("all files", "*.*")))
+        file = dlg.show()
+        self.open(file)
 
     def notImpl(self):
         top = Toplevel(self)
@@ -571,8 +614,43 @@ class CanvasInteract():
         self.restore()
         self.gui.isShowing=True
 
+def usage():
+    print()
+    print()
+    print("SYNOPSIS: "+sys.argv[0])
+    print(" -h                      help")
+    print(" -v                      verbose (currently always verbose)")
+    print(" -i yaml-file            open the yaml file")
+    print(" --exit-immediately      exits straight after rendering the page (for testing)")
+    return 0
+
 def main():
-    gui = SingulersumGUI()
+    verbose             = False
+    exitImmediate       = False
+    quitAfterAnimation  = False
+    inputFile           = None
+
+    try:
+        optlist, args = getopt.getopt(sys.argv[1:], "vi:heq", ["verbose", "input=", "help", "exit-immediate", "quit-after-animation"])
+    except getopt.GetoptError as err:
+        print(err)
+        usage()
+        return 1
+
+    for name, value in optlist:
+        if name in ["-v", "--verbose"]:
+            verbose = True
+        elif name in ["-i", "--input"]:
+            inputFile = value
+        elif name in ["-h", "--help"]:
+            return usage()
+        elif name in ["-e", "--exit-immediate"]:
+            exitImmediate = True
+        elif name in ["-q", "--quit-after-animation"]:
+            quitAfterAnimation=True
+
+
+    gui = SingulersumGUI(verbose=verbose, exitImmediate=exitImmediate, quitAfterAnimation=quitAfterAnimation, inputFile=inputFile)
     gui.mainloop()
 
 exit(main())

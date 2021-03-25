@@ -23,6 +23,7 @@
 #               Camera is inheriting from Miniverse)
 # 2021-03-25 ph Camera class is now in it's own file /Singulersum/Camera.py for
 #               readability
+# 2021-03-25 ph default camera always stays (and reported back to GUI using callback)
 
 """
     class Singulersum.Singulersum()
@@ -399,7 +400,13 @@ class Singulersum(Miniverse):
 
     def reset(self):
         self.debug("Singulersum.reset(), delete all objects")
+        defaultCam = None
+        if "default" in self.cameras:
+            defaultCam = self.cameras["default"]
         self.cameras={}         # delete all cameras
+        if defaultCam is not None:
+            self.cameras["default"] = defaultCam
+            self.callback("set", name="camera", value="default")
         self.lights={}         # delete all lights
         super().reset()
 
