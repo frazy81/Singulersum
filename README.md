@@ -41,6 +41,7 @@ math calculus behind this software (one out of 16 pages):
 
 Feature-Set of Singulersum:
  * 3D objects that may contain other objects (recursive structure)
+ * z-Buffering
  * different cameras (all with their own position and view angles in space)
  * camera and object animation (currently only camera animation)
    * either through mouse in GUI or
