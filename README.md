@@ -1,6 +1,6 @@
-# Singulersum - 3D rendering engine
+# Singulersum - 3D graphics rendering engine
 
-Singulersum is a prototype 3D rendering engine. It aims to be able to visualize STL files, freely defined 3D functions as well as other objects (like points, lines, planes, spheres, polygons) in a 3D environment.
+Singulersum is a prototype 3D graphics rendering engine. It aims to be able to visualize STL files, freely defined 3D functions and other objects (like points, lines, planes, spheres, polygons) in a 3D environment. It's a pure python software pipeline for 3D and 2D graphics to do what normally a GPU would do.
 
 First some important notes:
  * this software is SLOW! It runs on the CPU (not a GPU) and is single threaded! Performance was NOT intended.
@@ -24,7 +24,7 @@ Some examples, videos and pictures:
 Visualize binary and textual STL files (currently without color support):
 ![STL-Viewer](/docs/falcon.png)
 
-Creation of animation videos using yaml configuration files (/scripts/singulersum_video.py, using /yaml/sphericon_ascii_stl.yaml)
+Creation of animation videos using yaml configuration files (/scripts/singulersum_gui.py, using /yaml/sphericon_ascii_stl.yaml)
 ![YAML](/docs/yaml.png)
 
 here some videos, created using Singulersum (/scripts/singulersum_video.py)
@@ -39,7 +39,17 @@ Creating graphical representations of mathematical functions
 math calculus behind this software (one out of 16 pages):
 ![math](/docs/original_note_example.jpg)
 
-My name is Philipp Hasenfratz (philipp.hasenfratz at gmx.net). I'm a software developer based in Switzerland. This project was a fun side project of mine. I was wondering if I still had the mathematical skills to create and develop a 3D rendering engine prototype without any external tools, libraries, help or a GPU.
-After 20 years out of school I was a bit rusty doing the math, but I got it back again with some help of wikipedia of course. But the main objective was to develop the whole math myself and for most part I did exactly that. So the math behind Singulersum is most probably not the same as in commonly used 3D software...
+Feature-Set of Singulersum:
+ * 3D objects that may contain other objects (recursive structure)
+ * different cameras (all with their own position and view angles in space)
+ * camera and object animation (currently only camera animation)
+   * either through mouse in GUI or
+   * configured in yaml
+ * light sources (not yet supported)
+ * luminescence (by comparing normal vector of polygons with view vector of camera)
+ * object browser (not yet supported) to change properties of objects
+
+My name is Philipp Hasenfratz (philipp.hasenfratz at protonmail.com). I'm a software developer based in Switzerland. This project was a fun side project of mine. I was wondering if I still had the mathematical skills to create and develop a 3D rendering engine prototype without any external tools, libraries, help or a GPU.
+After 20 years out of school I was a bit rusty doing the math (vector geometry, matrix calculation, dot and vector product (luminescence calculus), linear equation systems, linear algebra), but I got it back again with some help of wikipedia of course. But the main objective was to develop the whole math myself and for most part I did exactly that. So the math behind Singulersum is most probably not the same as in commonly used 3D software...
 
 After two weeks and roughly 200 hours of work the prototype was ready and worked (more or less)...
