@@ -27,12 +27,11 @@ Visualize binary and textual STL files (currently without color support):
 Creation of animation videos using yaml configuration files (/scripts/singulersum_gui.py, using /yaml/sphericon_ascii_stl.yaml)
 ![YAML](/docs/yaml.png)
 
-
 here some videos, created using Singulersum (/scripts/singulersum_video.py)
 [![Millennium Falcon](https://img.youtube.com/vi/CSX7vUux068/0.jpg)](https://www.youtube.com/watch?v=CSX7vUux068)
 
 video of the function z=sin(x)+sin(y):
-[video](https://www.youtube.com/watch?v=QPDUIITXlK4)
+[![z=sin(x)+sin(y)](https://img.youtube.com/vi/QPDUIITXlK4/0.jpg)](https://www.youtube.com/watch?v=QPDUIITXlK4)
 
 Creating graphical representations of mathematical functions
 ![heart-curve](/docs/heart.png)
