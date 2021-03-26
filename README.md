@@ -28,9 +28,11 @@ Creation of animation videos using yaml configuration files (/scripts/singulersu
 ![YAML](/docs/yaml.png)
 
 here some videos, created using Singulersum (/scripts/singulersum_video.py)
+
 [![Millennium Falcon](https://img.youtube.com/vi/CSX7vUux068/0.jpg)](https://www.youtube.com/watch?v=CSX7vUux068)
 
 video of the function z=sin(x)+sin(y):
+
 [![z=sin(x)+sin(y)](https://img.youtube.com/vi/QPDUIITXlK4/0.jpg)](https://www.youtube.com/watch?v=QPDUIITXlK4)
 
 Creating graphical representations of mathematical functions
