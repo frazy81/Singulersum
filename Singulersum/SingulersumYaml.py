@@ -80,7 +80,8 @@ class SingulersumYaml(Debug):
             if point is None:
                 self.debug("point needs a variable 'point'!")
                 exit(0)
-            obj=parent.point( (point[0], point[1], point[2]), **namespace)
+            obj = parent.object(**namespace)
+            obj=obj.point( (point[0], point[1], point[2]), **namespace)
 
         elif objtype=="camera":
             position = namespace.pop("position", None)
@@ -147,7 +148,8 @@ class SingulersumYaml(Debug):
 
         elif objtype=="polygon":
             polygon = namespace.pop("points", None)
-            obj = parent.polygon(*polygon, **namespace)
+            obj = parent.object(**namespace)
+            obj = obj.polygon(*polygon, **namespace)
 
         elif objtype=="coordinatesystem":
             obj = parent.coordinateSystem(**namespace)

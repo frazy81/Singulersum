@@ -44,7 +44,7 @@ from Singulersum.Singulersum import Singulersum
 from tkinter import *
 from tkinter import filedialog
 from PIL.ImageTk import PhotoImage, Image
-from math import *
+import math
 import time
 import getopt
 
@@ -72,14 +72,14 @@ class SingulersumGUI(Tk):
         self.settingsBrowser = False
         self.selectedItem = None    # sg def first
 
-        self.canvasInteract = CanvasInteract(self, None)
-
         self.sg = Singulersum(scale=(5.0, 5.0, 5.0), callback=self.callback)
         self.sg.logfile("./singulersum_gui.log")
 
         # setup default camera
         self.cam = self.sg.camera(1.0, 0.3, 0.4, 0.0, 0.0, 0.0, name="default")
         self.camera = "default"
+        self.canvasInteract = CanvasInteract(self, self.cam)
+        self.newCamera(self.camera)
 
         if inputFile is not None:
             # load the file
@@ -87,9 +87,6 @@ class SingulersumGUI(Tk):
         else:
             # load default
             self.sg.yaml("../yaml/lighttest.yaml")
-
-        self.cam = self.sg.cameras[self.camera]
-        self.canvasInteract.camera(self.cam)    # same in callback()!!!
 
         self.selectedItem = self.sg
 
@@ -569,9 +566,9 @@ class CanvasInteract():
             self.camInitialX = self.cam.x
             self.camInitialY = self.cam.y
             self.camInitialZ = self.cam.z
-            self.azimuth     = atan2(self.cam.y, self.cam.x)
             self.initial = (x, y)
             print("select:", x, y)
+            self.azimuth     = math.atan2(self.cam.y, self.cam.x)
             self.gui.isPlaying=False
             self.gui.isShowing=True
 

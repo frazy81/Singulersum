@@ -43,6 +43,7 @@ in singulersum_video.py these camera animations can be done by giving the camera
 
 singulersum_video.py takes a .yaml file as input, renders the scene and outputs it as a video.
 
-# example:
-./singulersum_video.py -h       # show some help
+### example:
+./singulersum_video.py -h
+
 ./singulersum_video.py -i ../yaml/cube.yaml -o ./testing.mov

@@ -6,6 +6,7 @@ gui:
     camera: cam1
 sg:
     scale: [5.0, 5.0, 5.0]
+    showBackground: True
 cs:
     type: coordinatesystem
 animator:
@@ -15,14 +16,16 @@ animator:
     start: 0.0
     radius: 1.0
     azimuth: time*30
-    altitude: !!str 10.0
+    altitude: !!str 20.0
 cam1:
     type: camera
-    position: [1.0, 0.2, 0.2]
+    position: [1.0, 0.2, 0.4]
     lookat: [0.0, 0.0, 0.0]
     update: animator
 lighttest:
     type: polygon
+    # right handed coordinate system. Points must go "counter clock wise" to generate a
+    # "vertical-up" oriented normalvector
     points: [
         [0, 0, 0],
         [0, 1, 0],
@@ -30,4 +33,16 @@ lighttest:
         [0, 0, 1]
     ]
     place: [0.0, 0.0, 0.0]
-    size: 1.0
+    size: 0.4
+lighttest2:
+    type: polygon
+    # right handed coordinate system. Points must go "counter clock wise" to generate a
+    # "vertical-up" oriented normalvector
+    points: [
+        [0, 0, 0],
+        [1, 0, 0],
+        [1, 1, 0],
+        [0, 1, 0],
+    ]
+    place: [0.0, 0.0, 0.0]
+    size: 0.4

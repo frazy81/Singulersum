@@ -4,11 +4,11 @@
 # 2021-03-24 ph up to date with Camera()
 
 """
-    unittests.py
+    unittest_rotate.py
 
     Created:    2021-03-21 Philipp Hasenfratz
 
-    some unittests. Needs a lot more here... ;-)
+    unittests to test rotation
 """
 
 import sys

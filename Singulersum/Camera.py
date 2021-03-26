@@ -329,19 +329,40 @@ class Camera(Miniverse):
                     if isSpecialContext:
                         p = self.applyContext(context, p)[0]
                     poly.append( p )
-                # TODO: normalvector must be "camera"(!) rotated as well!
                 normalvector = obj.normalvector
                 if isSpecialContext:
                     normalvector = self.applyContext(context, normalvector)[0]
+                #self.debug("polygon normal vector before cam", normalvector)
+                cameraContext = {
+                    "place" :   [0.0, 0.0, 0.0],
+                    "size" :    1.0,    # size gets added???
+                    "azimuth" : -1*self.azimuth,
+                    "altitude": -1*self.altitude,
+                    "roll":     self.roll,
+                }
+                normalvector = self.applyContext(cameraContext, normalvector)[0]
                 if normalvector[0]==0 and normalvector[1]==0 and normalvector[2]==0:
                     normalvector=(1e-06, 0.0, 0.0)
-                # this is wrong. self.V should be self.V_prime?
-                angle = acos( self.dot_product(self.V, normalvector) / (self.vec_len(self.V)*self.vec_len(normalvector) ) )
+                #self.debug("polygon", obj.name)
+                #self.debug("polygon normal vector", normalvector)
+                #self.debug("V_prime", self.V_prime)
+                dot_product = self.dot_product(self.V_prime, normalvector)
+                #self.debug("dot product", dot_product)
+                angle = acos( dot_product / (self.vec_len(self.V_prime)*self.vec_len(normalvector) ) )
+                angle = angle/pi*180
+                #self.debug("polygon angle between normal vector and view vector", angle)
                 if angle>90:
-                    # from back
-                    colorize = -1
+                    colorize = abs(90-angle)/90
                 else:
-                    colorize = abs(pi/2-angle)/(pi/2)
+                    if self.parent.showBackground is True:
+                        # from back, set colorize=-1, back side of polygons are specially
+                        # color coded (like green, so that the user see's that something
+                        # is viewed from it's back)
+                        colorize = -1
+                    else:
+                        # show "normal" luminescense as if viewed from front
+                        colorize = abs(90-angle)/90
+                #self.debug("polygon colorize", colorize)
                 polys.append( { "points":poly, "normalvector":normalvector, "colorize":colorize, "color":obj.color, "name":obj.name } )
             elif isinstance(obj, CoordinateSystem):
                 # ignore it! It added Lines to the parent context
@@ -427,11 +448,16 @@ class Camera(Miniverse):
         for poly in polys:
             npoints = []
             distance = 0.0
+            # 2021-03-26 ph doing a "poly.distance=max(poly_points.distance)" causes
+            # a lot of z-fighting, since for example edge points of a cube are shared
+            # by cube sides and therefore they sometimes have equal maximal distances
+            # and this causes z-fighting. But also taking the average over all points
+            # of a polygone isn't a perfect solution.
             for p in poly["points"]:
                 p = self.project_p2d(p)
-                if p[2]>distance:
-                    distance=p[2]
+                distance+=p[2]
                 npoints.append(p)
+            distance /= len(npoints)
             poly["points"] = npoints
             poly["distance"] = distance
         self.debug("2nd step done", timeit=step2timeit)
@@ -458,7 +484,7 @@ class Camera(Miniverse):
             # this fast (and lossy) check can be deactivated by
             # sg.useFastHiddenPolyCheck=False
             if "name" in poly and poly["name"] is not None:
-                self.debug("drawing polygon "+str(poly["name"]))
+                self.debug("drawing polygon "+str(poly["name"])+", zIndex: "+str(poly["distance"]))
             hidden=True
             for p in poly["points"]:
                 if self.draw2d.zIndex(p[0], p[1])>poly["distance"]:
@@ -479,15 +505,19 @@ class Camera(Miniverse):
                     poly["distance"]=None
                 fill = color
                 stroke = color
+                if self.parent.polyGrid is True:
+                    stroke = (255, 255, 255)
                 if self.parent.polyOnlyGrid is True:
                     fill = None
+                    stroke = (255, 255, 255)
                 if self.parent.polyGrid is False and self.parent.polyOnlyGrid is False:
                     stroke = None
                 if self.parent.polyOnlyPoint is False:
                     self.draw2d.polygon(*poly["points"], stroke=stroke, fill=fill, zIndex=poly["distance"])
                 else:
-                    for p in poly["points"]:
-                        self.draw2d.point(p[0], p[1], color="white")
+                    # only one point per polygon. Small performance upgrade and good
+                    # enough in most cases.
+                    self.draw2d.point(poly["points"][0][0], poly["points"][0][1], color="white")
             else:
                 poly_hidden+=1
         self.debug("polygons drawing complete.", timeit=poly_timing)

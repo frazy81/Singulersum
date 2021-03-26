@@ -7,7 +7,7 @@ gui:
 sg:
     scale: [5.0, 5.0, 5.0]
     zBuffering: False
-    polyOnlyGrid: True
+    showBackground: False
 cs:
     type: coordinatesystem
 animator:

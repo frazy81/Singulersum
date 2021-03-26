@@ -6,6 +6,7 @@ gui:
     camera: cam1
 sg:
     scale: [5.0, 5.0, 5.0]
+    showBackground: False
 cs:
     type: coordinatesystem
 animator:
@@ -31,6 +32,6 @@ f1:
     rel: z
     scale: [5.0, 5.0, 5.0]
     size: 1
-p1:
-    type: point
-    point: [5.0, 5.0, 5.0]
+#p1:
+#    type: point
+#    point: [5.0, 5.0, 5.0]

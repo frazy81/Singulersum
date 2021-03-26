@@ -1,6 +1,7 @@
 # 2021-03-14 ph Created
 # 2021-03-21 ph line_plane_intersection had a bug. distance is C-P and not C-P_prime
 # 2021-03-24 ph line() -> vec_line(), so that line() is Miniverses line()
+# 2021-03-26 ph cross_product was wrong, resulting in wrong normalvector computation
 
 """
     Singulersum.VectorMath()
@@ -21,7 +22,7 @@ class VectorMath(Debug):
         self.vec_len = lambda vector: sqrt(vector[0]**2+vector[1]**2+vector[2]**2)
         self.vec_mul_scalar = lambda vector, factor: (vector[0]*factor, vector[1]*factor,vector[2]*factor)
         self.dot_product = lambda v1,v2: (v1[0]*v2[0]+v1[1]*v2[1]+v1[2]*v2[2])
-        self.cross_product = lambda v, t: ( v[1]*t[2]+v[2]*t[1], v[0]*t[2]+v[2]*t[0], v[0]*t[1]+v[1]*t[0] )
+        self.cross_product = lambda v, t: ( v[1]*t[2]-v[2]*t[1], v[2]*t[0]-v[0]*t[2], v[0]*t[1]-v[1]*t[0] )
         self.matrix_vector_product_2 = lambda M, v: (M[0][0]*v[0]+M[0][1]*v[1], M[1][0]*v[0]+M[1][1]*v[1])
         self.matrix_vector_product_3 = lambda M, v: (M[0][0]*v[0]+M[0][1]*v[1]+M[0][2]*v[2], M[1][0]*v[0]+M[1][1]*v[1]+M[1][2]*v[2], M[2][0]*v[0]+M[2][1]*v[1]+M[2][2]*v[2])
         # line(point_vector(list:x,y,z)), direction_vector(list:x,y,z))):
@@ -77,6 +78,25 @@ class VectorMath(Debug):
         const += normal_vector[1]*-1*point_vector[1]
         const += normal_vector[2]*-1*point_vector[2]
         return (x,y,z,const, point_vector[0], point_vector[1], point_vector[2])
+
+    def poly_normalvector(self, p0, p1, p2):
+        # calculate the normalvector to this polygon
+        v  = self.vec_sub(p1,p0)    # p0->p1 (p01)
+        t  = self.vec_sub(p2,p0)    # p0->p2 (p02)
+        # normalvector is the crossproduct of these two
+        # TODO: check for collinearity first! if yes: choose other points if given
+        normalvector = self.cross_product(v,t)
+        normallength = self.vec_len(normalvector)
+        if normallength>0.0:
+            normalvector = self.vec_mul_scalar(normalvector, 1/normallength)
+        else:
+            # TODO: fix me, collinearity
+            print("points:", p0, p1, p2)
+            print("normalvector:", normalvector)
+            print("normalvector 0!")
+            raise ValueError
+        return normalvector
+
 
     # rotate a 3D vector p by azimuth (0-360°), altitude (-90 to +90°), roll (-180° to +180°)
     def rotate(self, p, azimuth=None, altitude=None, roll=None):

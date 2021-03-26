@@ -7,7 +7,8 @@ gui:
 sg:
     scale: [5.0, 5.0, 5.0]
     zBuffer: False
-    polyOnlyGrid: True
+    #polyOnlyGrid: True
+    showBackground: False
 cs:
     type: coordinatesystem
 animator:
@@ -16,7 +17,7 @@ animator:
     stop: 2.0
     start: 0.0
     radius: 1.0
-    azimuth: time*30
+    azimuth: time*30+60
     altitude: !!str 10.0
 cam1:
     type: camera

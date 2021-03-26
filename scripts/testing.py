@@ -8,7 +8,7 @@
 """
     testing.py
 
-    2021-03-05 ph Created by Philipp Hasenfratz
+    2021-03-05 Created by Philipp Hasenfratz
 
     testing.py is "almost" the same GUI as singulersum_gui.py ("the main viewer"). Use it
     to quickly setup a scene and test it.
@@ -19,8 +19,8 @@ sys.path.append("..")
 from Singulersum.Singulersum import Singulersum
 from tkinter import *
 from PIL.ImageTk import PhotoImage, Image
-from math import *
 import time
+import math
 
 class SingulersumGUI(Tk):
 
@@ -45,31 +45,6 @@ class SingulersumGUI(Tk):
         self.cam = self.sg.cameras[self.camera]
 
         self.createWidgets()
-
-        print("show initial image, for debugging")
-        self.showSingle()
-
-        print("sleep(2), showSingle for debugging()")
-        #time.sleep(2)
-
-        if "lighttest" in sg.objects:
-            print("normalvector", pg.normalvector)
-            print("view vector", self.cam.vec_mul_scalar(self.cam.V, 1/self.cam.vec_len(self.cam.V)))
-            normalvector = pg.normalvector
-            if normalvector[0]==0 and normalvector[1]==0 and normalvector[2]==0:
-                normalvector=(1e-06, 0.0, 0.0)
-            dot = self.cam.dot_product(self.cam.V, normalvector) / (self.cam.vec_len(self.cam.V)*self.cam.vec_len(normalvector) )
-            print("dot product", dot)
-            angle = acos( dot )
-            print("angle in degree", angle/pi*180)
-            colorize = abs(pi/2-angle)/(pi/2)
-            print("=> colorize-factor", colorize)
-
-        # animate and rotate the poly around the Y-axis
-        while (True):
-            nx = lambda x,y,z: x+y+z
-            break
-            pass
 
         self.mainloop_singulversum()
 

@@ -24,6 +24,8 @@
 # 2021-03-25 ph Camera class is now in it's own file /Singulersum/Camera.py for
 #               readability
 # 2021-03-25 ph default camera always stays (and reported back to GUI using callback)
+# 2021-03-26 ph polygon normal vector calculus corrected
+# 2021-03-26 ph cube fixes (colors, less z-fighting, normal vectors corrected)
 
 """
     class Singulersum.Singulersum()
@@ -176,6 +178,8 @@ class Miniverse(VectorMath, Debug):
     def line(self, *kwargs, **args):
         self.object_count += 1
         name = "line#"+str(self.object_count)
+        if "name" in args:
+            name = args["name"]
         obj = Line(self, *kwargs, **args)
         self.objects[name]=obj
         return obj
@@ -183,6 +187,8 @@ class Miniverse(VectorMath, Debug):
     def point(self, *kwargs, **args):
         self.object_count += 1
         name = "point#"+str(self.object_count)
+        if "name" in args:
+            name = args["name"]
         obj = Point(self, *kwargs, **args)
         self.objects[name]=obj
         return obj
@@ -190,6 +196,8 @@ class Miniverse(VectorMath, Debug):
     def polygon(self, *kwargs, **args):
         self.object_count += 1
         name = "poly#"+str(self.object_count)
+        if "name" in args:
+            name = args["name"]
         obj = Polygon(self, *kwargs, **args)
         self.objects[name]=obj
         return obj
@@ -197,6 +205,8 @@ class Miniverse(VectorMath, Debug):
     def coordinateSystem(self, *kwargs, **args):
         self.object_count += 1
         name = "cs#"+str(self.object_count)
+        if "name" in args:
+            name = args["name"]
         obj = CoordinateSystem(self, *kwargs, **args)
         self.objects[name]=obj
         return obj
@@ -391,6 +401,7 @@ class Singulersum(Miniverse):
 
         self.showCoordinateSystem   = True
         self.showCenterOfView       = True
+        self.showBackground         = True       # highlight polygons if viewed from back
         self.useFastHiddenPolyCheck = False      # this is lossy!
         self.polyOnlyGrid           = False      # show only lines of polynoms
         self.polyOnlyPoint          = False      # show only point clouds
@@ -537,7 +548,7 @@ class Polygon(BasicObject, VectorMath):
     def __init__(self, sg, *kwargs, normalvector=None, color=(255, 255, 255), **args):
         super().__init__(sg, **args)
         VectorMath.__init__(self)
-        self.normalvector = normalvector        # normal vector from the poly
+        self.normalvector = normalvector        # normal vector of the poly
         self.color = color
         scale = sg.scale
         self.points = []
@@ -545,23 +556,12 @@ class Polygon(BasicObject, VectorMath):
             self.points.append( (point[0]/scale[0], point[1]/scale[1], point[2]/scale[2] ))
         if normalvector is not None:
             return None # __init__ shall return None, but all ok.
-        # calculate the normalvector to this polygon, TODO: inside/outside??
+
+        # calculate the normalvector to this polygon
         p0 = self.points[0]
         p1 = self.points[1]
         p2 = self.points[2]
-        v  = self.vec_sub(p1,p0)    # p0->p1
-        t  = self.vec_sub(p2,p0)    # p0->p2
-        # normalvector is the crossproduct of these two
-        # TODO: check for coolinearity first! if yes: choose other points if given
-        self.normalvector = self.cross_product(v,t)
-        self.normallength = self.vec_len(self.normalvector)
-        if self.normallength>0.0:
-            self.normalvector = self.vec_mul_scalar(self.normalvector, 1/self.normallength)
-        else:
-            print("points:", p0, p1, p2)
-            print("normalvector:", self.normalvector)
-            print("normalvector 0!")
-            raise ValueError
+        self.normalvector = self.poly_normalvector(p0, p1, p2)
 
 class Function(Object):
 
@@ -622,12 +622,12 @@ class Function(Object):
                     ny=(float(j)/amount*2.0-1.0)*self.scale[1]
                     p = self.eval(nx,ny,0)
                 elif self.rel==0:
-                    ny=(float(i)/amount*2.0-1.0)*self.scale[0]
-                    nz=(float(j)/amount*2.0-1.0)*self.scale[1]
+                    ny=(float(i)/amount*2.0-1.0)*self.scale[1]
+                    nz=(float(j)/amount*2.0-1.0)*self.scale[2]
                     p = self.eval(0,ny,nz)
                 elif self.rel==1:
                     nx=(float(i)/amount*2.0-1.0)*self.scale[0]
-                    nz=(float(j)/amount*2.0-1.0)*self.scale[1]
+                    nz=(float(j)/amount*2.0-1.0)*self.scale[2]
                     p = self.eval(nx,0,nz)
                 else:
                     self.debug("unsupported!")
@@ -639,7 +639,7 @@ class Function(Object):
             for j in range(0, amount-1):
                 cnt+=1
                 poly = self.polygon( corps[i][j], corps[i+1][j], corps[i+1][j+1])
-                poly2= self.polygon( corps[i][j], corps[i][j+1], corps[i+1][j+1])
+                poly2= self.polygon( corps[i][j], corps[i+1][j+1], corps[i][j+1])
                 pass
 
         self.debug("polygon count for this function: ", cnt)
@@ -696,7 +696,7 @@ class Sphere(Object):
 
 class Cube(Object):
 
-    def __init__(self, parent, x=0.0, y=0.0, z=0.0, r=1.0, amount=20, *kwargs, **args):
+    def __init__(self, parent, x=0.0, y=0.0, z=0.0, r=1.0, *kwargs, **args):
         super().__init__(parent, *kwargs, **args)
         self.x = x
         self.y = y
@@ -715,36 +715,36 @@ class Cube(Object):
         r = self.r
 
         # front
-        p0 = (x+r, y-r, z-r)
-        p1 = (x+r, y+r, z-r)
-        p2 = (x+r, y+r, z+r)
-        p3 = (x+r, y-r, z+r)
-        #back
-        p4 = (x-r, y-r, z-r)
-        p5 = (x-r, y+r, z-r)
-        p6 = (x-r, y+r, z+r)
-        p7 = (x-r, y-r, z+r)
+        p0 = (x+r, y-r, z+r)
+        p1 = (x+r, y+r, z+r)
+        p2 = (x+r, y+r, z-r)
+        p3 = (x+r, y-r, z-r)
+        # back
+        p4 = (x-r, y-r, z+r)
+        p5 = (x-r, y+r, z+r)
+        p6 = (x-r, y+r, z-r)
+        p7 = (x-r, y-r, z-r)
 
         # TODO: color tests to identify z-Fighting problems
 
         # front
-        poly = self.polygon( p0, p1, p2, name="front_w", color="white" )
-        self.polygon( p0, p2, p3, name="front_w", color="white" )
+        self.polygon( p3, p1, p0, name="front1", color="white" )
+        self.polygon( p3, p2, p1, name="front2", color="white" )
         # top
-        self.polygon( p0, p4, p5, name="top_r", color="#ff0000" )
-        self.polygon( p0, p1, p5, name="top_r", color="#ff0000" )
+        self.polygon( p0, p1, p5, name="top1", color="#ff0000" )
+        self.polygon( p0, p5, p4, name="top2", color="#ff0000" )
         # left
-        self.polygon( p0, p3, p4, name="left_g", color="#00ff00" )
-        self.polygon( p3, p7, p4, name="left_g", color="#00ff00" )
+        self.polygon( p0, p4, p7, name="left1", color="#00f000" )
+        self.polygon( p0, p7, p3, name="left2", color="#00f000" )
         # right
-        self.polygon( p1, p5, p6, name="right_b", color="#0000ff" )
-        self.polygon( p1, p6, p2, name="right_b", color="#0000ff"  )
+        self.polygon( p1, p6, p5, name="right1", color="#0000ff" )
+        self.polygon( p1, p2, p6, name="right2", color="#0000ff"  )
         # bottom
-        self.polygon( p3, p6, p7, name="bottom_dark", color="#555555"  )
-        self.polygon( p3, p2, p6, name="bottom_dark", color="#555555" )
+        self.polygon( p3, p7, p6, name="bottom1", color="#ffff00"  )
+        self.polygon( p3, p6, p2, name="bottom2", color="#ffff00" )
         # back
-        self.polygon( p4, p5, p6, name="back_dark", color="#555555" )
-        self.polygon( p4, p7, p6, name="back_dark", color="#555555" )
+        self.polygon( p4, p5, p6, name="back1", color="#00ffff" )
+        self.polygon( p4, p6, p7, name="back2", color="#00ffff" )
 
 class Plane(Object):
 
