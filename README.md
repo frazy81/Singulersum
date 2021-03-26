@@ -28,10 +28,10 @@ Creation of animation videos using yaml configuration files (/scripts/singulersu
 ![YAML](/docs/yaml.png)
 
 here some videos, created using Singulersum (/scripts/singulersum_video.py)
-![video](https://www.youtube.com/watch?v=CSX7vUux068)
+[video](https://www.youtube.com/watch?v=CSX7vUux068)
 
 video of the function z=sin(x)+sin(y):
-![video](https://www.youtube.com/watch?v=QPDUIITXlK4)
+[video](https://www.youtube.com/watch?v=QPDUIITXlK4)
 
 Creating graphical representations of mathematical functions
 ![heart-curve](/docs/heart.png)
