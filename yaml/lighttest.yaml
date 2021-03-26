@@ -2,7 +2,7 @@
 
 gui:
     animated: True
-    stop: 1.5
+    stop: 12
     camera: cam1
 sg:
     scale: [5.0, 5.0, 5.0]
@@ -12,7 +12,7 @@ cs:
 animator:
     # see Singulersum.py, "def animation()" for details on how to configure
     type: animation
-    stop: 20
+    stop: 12
     start: 0.0
     radius: 1.0
     azimuth: time*30

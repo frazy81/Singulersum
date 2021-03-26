@@ -1,8 +1,9 @@
 # 2021-03-24 ph Created
+# 2021-03-26 ph animator_rotate and higher altitude
 
 gui:
     animated: True
-    stop: 1.5
+    stop: 12.0
     camera: cam1
 sg:
     scale: [5.0, 5.0, 5.0]
@@ -13,18 +14,26 @@ cs:
 animator:
     # see Singulersum.py, "def animation()" for details on how to configure
     type: animation
-    stop: 1.5
+    stop: 6.0
     start: 0.0
-    begin: [0.35, -0.73, -0.28]
-    end: [1.3, 0.6, 0.5]
+    begin: [1.3, 0.6, 0.5]
+    end: [0.35, -0.73, -0.28]
     x: begin[0] + (time*(end[0] - begin[0]))
     y: begin[1] + (time*(end[1] - begin[1]))
     z: begin[2] + (time*(end[2] - begin[2]))
+animator_rotate:
+    # see Singulersum.py, "def animation()" for details on how to configure
+    type: animation
+    stop: 12
+    start: 0.0
+    radius: 1.0
+    azimuth: time*30
+    altitude: !!str 60.0
 cam1:
     type: camera
-    position: [0.35, -0.73, -0.28]
+    position: [1.3, 0.6, 0.5]
     lookat: [0.0, 0.0, 0.0]
-    update: animator
+    update: animator_rotate
 f1:
     type: function
     x: x
@@ -32,4 +41,3 @@ f1:
     z: sin(15*sqrt(x**2-1.2*abs(x)*y+y**2)**0.2)**2*sqrt(x**2-1.2*abs(x)*y+y**2)**0.3
     amount: 60
     rel: z
-default: cam

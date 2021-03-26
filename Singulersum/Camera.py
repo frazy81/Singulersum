@@ -2,6 +2,13 @@
 # 2021-03-25 ph Camera() class was previously in Singulersum.py. I think it improves
 #               readability and developing if it is in it's own file. Code is getting
 #               large.
+# 2021-03-26 ph reduced z-fighting. previously the z-Index of a polygone was the point
+#               that's most far away. This sounds well, but isn't. Especially with a cube
+#               where edge points are shared by two sides of the cube, this caused a lot
+#               of z-fighting. Better (and still not correct/good) approach is to average
+#               the z-Index of all polygon points. The best (but most costly) solution is
+#               to calculate the exact z-Index of ALL points within the polygon,
+#               resulting in a huge uplift of needed computations.
 
 """
     class Singulersum.Camera()

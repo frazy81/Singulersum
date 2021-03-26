@@ -33,10 +33,10 @@
 # TODO: maybe checkout pyautogui for absolute mouse coords
 # TODO: export currently shown frame as .png
 # TODO: export current scenery as .stl
+# TODO: export current scenery as .yaml
 # TODO: after mouse operation the updateFunction might be reinitialized so that rewind/
 #       play works again.
 # TODO: logfile yes/no
-# TODO: Sphericon: color intensify (deactivate luminescense)
 
 import sys
 sys.path.append("..")
@@ -87,6 +87,9 @@ class SingulersumGUI(Tk):
         else:
             # load default
             self.sg.yaml("../yaml/lighttest.yaml")
+            # each call to yaml will callback to self.callback and sets the camera that
+            # is defined within the yaml file.
+            pass
 
         self.selectedItem = self.sg
 

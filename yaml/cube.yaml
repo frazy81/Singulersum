@@ -1,17 +1,19 @@
 # 2021-03-24 ph Created
+# 2021-03-26 ph resized (bigger)
 
 gui:
     animated: True
-    stop: 1.5
+    stop: 12
     camera: cam1
 sg:
     scale: [5.0, 5.0, 5.0]
+    showBackground: False       # False for video, True for GUI to test z-Index Problems.
 cs:
     type: coordinatesystem
 animator_rotate:
     # see Singulersum.py, "def animation()" for details on how to configure
     type: animation
-    stop: 20
+    stop: 12
     start: 0.0
     radius: 1.0
     azimuth: time*30
@@ -37,5 +39,5 @@ cube:
     y: 0
     z: 0
     r: 1.0
-    size: 0.2
+    size: 0.8
 default: cam
