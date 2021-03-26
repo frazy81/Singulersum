@@ -19,7 +19,7 @@ Why did I create Singulersum
 Some examples, videos and pictures:
 
 /scripts/singulersum_gui.py, a Tkinter based GUI for Singulersum 3D rendering engine
-![singulersum_gui.py](/docs/singulersum_gui.png)
+![singulersum_gui.py](/docs/singulersum_gui_lo.png)
 
 Visualize binary and textual STL files (currently without color support):
 ![STL-Viewer](/docs/falcon.png)
