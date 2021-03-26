@@ -22,10 +22,10 @@ Some examples, videos and pictures:
 ![singulersum_gui.py](/docs/singulersum_gui_lo.png)
 
 Visualize binary and textual STL files (currently without color support):
-![STL-Viewer](/docs/falcon.png)
+![STL-Viewer](/docs/falcon_lo.png)
 
 Creation of animation videos using yaml configuration files (/scripts/singulersum_gui.py, using /yaml/sphericon_ascii_stl.yaml)
-![YAML](/docs/yaml.png)
+![YAML](/docs/yaml_lo.png)
 
 here some videos, created using Singulersum (/scripts/singulersum_video.py)
 
@@ -36,10 +36,10 @@ video of the function z=sin(x)+sin(y):
 [![z=sin(x)+sin(y)](https://img.youtube.com/vi/QPDUIITXlK4/0.jpg)](https://www.youtube.com/watch?v=QPDUIITXlK4)
 
 Creating graphical representations of mathematical functions
-![heart-curve](/docs/heart.png)
+![heart-curve](/docs/heart_lo.png)
 
 math calculus behind this software (one out of 16 pages):
-![math](/docs/original_note_example.jpg)
+![math](/docs/original_note_example_lo.jpg)
 
 Feature-Set of Singulersum:
  * 3D objects that may contain other objects (recursive structure)
