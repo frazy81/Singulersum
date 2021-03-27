@@ -6,7 +6,7 @@ gui:
     camera: cam1
 sg:
     scale: [5.0, 5.0, 5.0]
-    showBackground: True
+    showBackside: True
 cs:
     type: coordinatesystem
 animator:

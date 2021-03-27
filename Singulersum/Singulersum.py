@@ -27,6 +27,9 @@
 # 2021-03-26 ph polygon normal vector calculus corrected
 # 2021-03-26 ph cube fixes (colors, less z-fighting, normal vectors corrected)
 # 2021-03-27 ph close sphere fix (sphere was not "closed")
+# 2021-03-27 ph animation did not recognize radius fix
+# 2021-03-27 ph stl maxX,maxY,maxZ -> scale fix. scale needs to be the absolute maximum
+# 2021-03-27 ph polygon color now fill=<color>, stroke=<color>
 
 """
     class Singulersum.Singulersum()
@@ -257,13 +260,20 @@ class Miniverse(VectorMath, Debug):
         anonymousObject = self.object(*kwargs, **args)
         stl = STL(self, file)
         (maxX, maxY, maxZ, polygon_count) = stl.read()
-        anonymousObject.scale = (maxX, maxY, maxZ)
+        max = 0
+        if maxX>max:
+            max=maxX
+        if maxY>max:
+            max=maxY
+        if maxZ>max:
+            max=maxZ
+        anonymousObject.scale = (max, max, max)
         polys = stl.getPolygons()
         norms = stl.getNormalvectors()
         for i in range(0, len(polys)):
             poly = polys[i]
             norm = norms[i]
-            anonymousObject.polygon( *poly, normalvector=norm )
+            anonymousObject.polygon( *poly, normalvector=norm, stroke=None, fill=(255,255,255) )
         return anonymousObject
 
     def yaml(self, file=None, data=None, *kwargs, **args):
@@ -286,6 +296,7 @@ class Miniverse(VectorMath, Debug):
         ox = self.x
         oy = self.y
         oz = self.z
+        self.debug("args:", args)
         self.debug("old values:")
         self.debug("  x", ox)
         self.debug("  y", oy)
@@ -322,24 +333,24 @@ class Miniverse(VectorMath, Debug):
             type="absolute"
             self.z = eval(args["z"], args)
 
-        if "r" in args:
+        if "radius" in args:
             if type=="absolute":
                 self.debug("animation() got absolute and spherical information! Only have x,y,z set OR r,azimuth,altitude!")
                 exit(0)
             type="spherical"
-            self.radius = eval(args["radius"], args)
+            self.radius = eval(str(args["radius"]), args)
         if "azimuth" in args:
             if type=="absolute":
                 self.debug("animation() got absolute and spherical information! Only have x,y,z set OR r,azimuth,altitude!")
                 exit(0)
             type="spherical"
-            self.azimuth = eval(args["azimuth"], args)
+            self.azimuth = eval(str(args["azimuth"]), args)
         if "altitude" in args:
             if type=="absolute":
                 self.debug("animation() got absolute and spherical information! Only have x,y,z set OR r,azimuth,altitude!")
                 exit(0)
             type="spherical"
-            self.altitude = eval(args["altitude"], args)
+            self.altitude = eval(str(args["altitude"]), args)
 
         if type=="unknown":
             self.debug("animation() got no spherical or absolute information!")
@@ -347,8 +358,10 @@ class Miniverse(VectorMath, Debug):
             return False
 
         if type=="spherical":
+            self.debug("animation(), setPlaceSpherical(", self.azimuth, self.altitude, self.radius, ")")
             self.setPlaceSpherical(self.azimuth, self.altitude, self.radius)
         else:
+            self.debug("animation(), setPlace(", self.x, self.y, self.z, ")")
             self.setPlace(self.x, self.y, self.z)
 
         self.debug("current/new values:")
@@ -393,7 +406,7 @@ class Singulersum(Miniverse):
 
         self.showCoordinateSystem   = True
         self.showCenterOfView       = True
-        self.showBackground         = True       # highlight polygons if viewed from back
+        self.showBackside           = True       # highlight polygons if viewed from back
         self.useFastHiddenPolyCheck = False      # this is lossy!
         self.polyOnlyGrid           = False      # show only lines of polynoms
         self.polyOnlyPoint          = False      # show only point clouds
@@ -537,7 +550,7 @@ class Polygon(BasicObject, VectorMath):
 
     vec = None
 
-    def __init__(self, sg, *kwargs, normalvector=None, fill="white", stroke="white", alpha=0, **args):
+    def __init__(self, sg, *kwargs, normalvector=None, fill="white", stroke=None, alpha=0, **args):
         self.fill=fill
         self.stroke=stroke
         self.alpha=alpha
@@ -686,7 +699,7 @@ class Sphere(Object):
         cnt=0
         # 2021-03-27 ph range begins at -1, so that sphere is closed.
         for i in range(-1,self.amount-1):
-            for j in range(-1, self.amount-1):
+            for j in range(0, self.amount-1):
                 cnt+=1
                 poly = self.polygon( corps[i][j], corps[i+1][j], corps[i+1][j+1], alpha=self.alpha, fill=self.fill, stroke=self.stroke)
                 poly2= self.polygon( corps[i][j], corps[i+1][j+1], corps[i][j+1], alpha=self.alpha, fill=self.fill, stroke=self.stroke)
@@ -723,26 +736,24 @@ class Cube(Object):
         p6 = (x-r, y+r, z-r)
         p7 = (x-r, y-r, z-r)
 
-        # TODO: color tests to identify z-Fighting problems
-
         # front
-        self.polygon( p3, p1, p0, name="front1", color="white" )
-        self.polygon( p3, p2, p1, name="front2", color="white" )
+        self.polygon( p3, p1, p0, name="front1", fill="white" )
+        self.polygon( p3, p2, p1, name="front2", fill="white" )
         # top
-        self.polygon( p0, p1, p5, name="top1", color="#ff0000" )
-        self.polygon( p0, p5, p4, name="top2", color="#ff0000" )
+        self.polygon( p0, p1, p5, name="top1", fill="#ff0000" )
+        self.polygon( p0, p5, p4, name="top2", fill="#ff0000" )
         # left
-        self.polygon( p0, p4, p7, name="left1", color="#00f000" )
-        self.polygon( p0, p7, p3, name="left2", color="#00f000" )
+        self.polygon( p0, p4, p7, name="left1", fill="#00f000" )
+        self.polygon( p0, p7, p3, name="left2", fill="#00f000" )
         # right
-        self.polygon( p1, p6, p5, name="right1", color="#0000ff" )
-        self.polygon( p1, p2, p6, name="right2", color="#0000ff"  )
+        self.polygon( p1, p6, p5, name="right1", fill="#0000ff" )
+        self.polygon( p1, p2, p6, name="right2", fill="#0000ff"  )
         # bottom
-        self.polygon( p3, p7, p6, name="bottom1", color="#ffff00"  )
-        self.polygon( p3, p6, p2, name="bottom2", color="#ffff00" )
+        self.polygon( p3, p7, p6, name="bottom1", fill="#ffff00"  )
+        self.polygon( p3, p6, p2, name="bottom2", fill="#ffff00" )
         # back
-        self.polygon( p4, p5, p6, name="back1", color="#00ffff" )
-        self.polygon( p4, p6, p7, name="back2", color="#00ffff" )
+        self.polygon( p4, p5, p6, name="back1", fill="#00ffff" )
+        self.polygon( p4, p6, p7, name="back2", fill="#00ffff" )
 
 class Plane(Object):
 
@@ -784,7 +795,7 @@ class CoordinateSystem(BasicObject):
             changed = False
         return changed
 
-# OLD IMAGE code that was part of Camera() class:
+    # OLD IMAGE code that was part of Camera() class:
     def oldimage(self):
         time = self.sg.time
         img = Image.new("RGBA", (self.width, self.height), (0,0,0))

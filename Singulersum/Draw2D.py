@@ -6,6 +6,7 @@
 # 2021-03-14 ph Vector Algebra is moved to VectorMath.py
 # 2021-03-15 ph Performance Boost with new array method!
 # 2021-03-27 ph alpha not part of color fix
+# 2021-03-27 ph polygon stroke optional
 
 """
     class Singulersum.Draw2D()
@@ -38,6 +39,9 @@ import struct
 import array
 import sys      # float.max
 
+#from multiprocessing import Queue, Process
+from queue import Empty
+
 from Singulersum.Debug import Debug
 from Singulersum.VectorMath import VectorMath
 
@@ -51,6 +55,10 @@ class Draw2D(Debug):
         self.height = height
         self.data   = []
         self.zBuf   = []
+        #self.poly_threads = 32      # None if no multithreading shall be used
+        self.poly_end = False
+        #self.poly_worker = []
+        #self.poly_queue = []
         self.dataInit()
 
     def dataInit(self):
@@ -149,6 +157,7 @@ class Draw2D(Debug):
                 exit(0)
         else:
             print(color, " is not a supported color")
+            raise ValueError
             return (255, 255, 255)
 
     def point(self, x, y, color="white", alpha=0, zIndex=None):  # alpha=0: solid, alpha=255: transp.
@@ -363,11 +372,16 @@ class Draw2D(Debug):
         pl = kwargs[0]
         # always fill for zIndex:
         self.polygon_fill(*kwargs, fill=fill, alpha=alpha, zIndex=zIndex)
-        for i in range(1,len(kwargs)):
-            p=kwargs[i]
-            self.line(pl[0], pl[1], p[0], p[1], color=stroke, alpha=alpha, antialias=antialias, zIndex=zIndex)
-            pl=p
-        self.line(pl[0], pl[1], p0[0], p0[1], color=stroke, alpha=alpha, antialias=antialias, zIndex=zIndex)
+        if stroke is not None:
+            for i in range(1,len(kwargs)):
+                p=kwargs[i]
+                self.line(pl[0], pl[1], p[0], p[1], color=stroke, alpha=alpha, antialias=antialias, zIndex=zIndex)
+                pl=p
+            self.line(pl[0], pl[1], p0[0], p0[1], color=stroke, alpha=alpha, antialias=antialias, zIndex=zIndex)
+
+    def polygon_end(self):
+        # signal threads that they may end
+        self.poly_end = True
 
     def magnify_testing(self, scalex, scaley):
         # take the left/top most 20 pixel and magnify them
@@ -376,7 +390,6 @@ class Draw2D(Debug):
 
     def image(self):
         # return image as rawimage RGBA, 4 Byte (bytes() array) per pixel
-        self.set(1,0,5,5,5)
         self.debug("draw2d.image() start", self.width, self.height)
         timeit = self.timeit()
         data = bytearray(0) # 4xbyte, R, G, B, A

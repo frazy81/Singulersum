@@ -7,7 +7,7 @@ gui:
     camera: cam1
 sg:
     scale: [5.0, 5.0, 5.0]
-    showBackground: False       # False for video, True for GUI to test z-Index Problems.
+    showBackside: False       # False for video, True for GUI to test z-Index Problems.
 cs:
     type: coordinatesystem
 animator_rotate:
@@ -39,5 +39,5 @@ cube:
     y: 0
     z: 0
     r: 1.0
-    size: 0.8
+    size: 0.4
 default: cam

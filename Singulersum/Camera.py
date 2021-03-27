@@ -9,6 +9,7 @@
 #               the z-Index of all polygon points. The best (but most costly) solution is
 #               to calculate the exact z-Index of ALL points within the polygon,
 #               resulting in a huge uplift of needed computations.
+# 2021-03-27 ph sg.showBackside (was sg.showBackground)
 
 """
     class Singulersum.Camera()
@@ -361,7 +362,7 @@ class Camera(Miniverse):
                 if angle>90:
                     colorize = abs(90-angle)/90
                 else:
-                    if self.parent.showBackground is True:
+                    if self.parent.showBackside is True:
                         # from back, set colorize=-1, back side of polygons are specially
                         # color coded (like green, so that the user see's that something
                         # is viewed from it's back)
@@ -502,8 +503,12 @@ class Camera(Miniverse):
             if self.parent.useFastHiddenPolyCheck is False:
                 hidden=False
             if hidden is False:
-                fill = self.draw2d.getColor(poly["fill"])
-                stroke = self.draw2d.getColor(poly["stroke"])
+                fill = (255,255,255)
+                stroke=(255,255,255)
+                if poly["fill"] is not None:
+                    fill = self.draw2d.getColor(poly["fill"])
+                if poly["stroke"] is not None:
+                    stroke = self.draw2d.getColor(poly["stroke"])
                 alpha = poly["alpha"]
                 if poly["colorize"]>0:
                     fill = (int(poly["colorize"]*fill[0]), int(poly["colorize"]*fill[1]), int(poly["colorize"]*fill[2]))
@@ -530,6 +535,7 @@ class Camera(Miniverse):
                     self.draw2d.point(poly["points"][0][0], poly["points"][0][1], color=stroke, alpha=alpha)
             else:
                 poly_hidden+=1
+        self.draw2d.polygon_end()
         self.debug("polygons drawing complete.", timeit=poly_timing)
 
         others_count=0

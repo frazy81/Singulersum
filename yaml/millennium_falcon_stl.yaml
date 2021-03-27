@@ -9,7 +9,7 @@ gui:
     camera: cam1
 sg:
     scale: [5.0, 5.0, 5.0]
-    showBackground: False
+    showBackside: False
 cs:
     type: coordinatesystem
 animator:
@@ -17,18 +17,18 @@ animator:
     type: animation
     stop: 12.0
     start: 0.0
-    radius: 1.2
+    radius: 2.0
     azimuth: time*30
     altitude: !!str 30.0
 cam1:
     type: camera
     position: [0.35, -0.73, -0.28]
     lookat: [0.0, 0.0, 0.0]
-    fov: 130
+    fov: 60
     update: animator
 falcon:
     type: stl
     visibility: True
     file: ../stl/Millennium_Falcon_Hi-Res.stl
-    place: [0.0, 0.0, 0]
+    place: [0.0, 0.0, 0.0]
     size: 0.9
