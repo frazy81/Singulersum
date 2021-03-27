@@ -10,6 +10,7 @@
 #               to calculate the exact z-Index of ALL points within the polygon,
 #               resulting in a huge uplift of needed computations.
 # 2021-03-27 ph sg.showBackside (was sg.showBackground)
+# 2021-03-27 ph plane -> plane_normalvec
 
 """
     class Singulersum.Camera()
@@ -203,7 +204,7 @@ class Camera(Miniverse):
         self.debug("Tangential point T:             ", self.vec_show(T))
         self.debug("   T=V/lV, since universe sphere has r=1.0 and (0,0,0) is center.")
         # e is the "view plane" where each point is projected on
-        self.e = self.plane(self.V_prime, T)
+        self.e = self.plane_normalvec(self.V_prime, T)
         self.debug("View plane e:                   ", self.plane_show(self.e))
         # camera view line: cl   (the "camera line" cl)
         # since the mapper_3d
@@ -217,7 +218,7 @@ class Camera(Miniverse):
 
         # now we can redo the plane e, but with O_prime as the "Stützvektor", since we
         # need this guy for later calculus of relative distances to O_prime
-        self.e = self.plane(self.V_prime, self.O_prime)
+        self.e = self.plane_normalvec(self.V_prime, self.O_prime)
         self.debug("new view plane e with O_prime:  ", self.plane_show(self.e))
 
         self.O_prime = self.line_plane_intersection(cl, self.e)

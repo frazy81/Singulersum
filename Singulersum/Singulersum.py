@@ -232,6 +232,14 @@ class Miniverse(VectorMath, Debug):
         self.objects[name]=obj
         return obj
 
+    def plane(self, name=None, *kwargs, **args):
+        self.object_count += 1
+        if name is None:
+            name = "plane#"+str(self.object_count)
+        obj = Plane(self, *kwargs, **args)
+        self.objects[name]=obj
+        return obj
+
     def object(self, name=None, *kwargs, **args):
         self.object_count += 1
         if name is None:
@@ -512,11 +520,11 @@ class Object(Miniverse):
     def __init__(self, parent, *kwargs, **args):
         super().__init__(parent, *kwargs, **args)
 
-# some basic shades
+# some basic drawers
 
 class Line(BasicObject):
 
-    def __init__(self, parent, p1, p2, *kwargs, **args):
+    def __init__(self, parent, x1, y1, z1, x2, y2, z2, *kwargs, **args):
         super().__init__(parent)
         scale = self.parent.scale
         if "color" in args:
@@ -527,20 +535,21 @@ class Line(BasicObject):
             self.thickness=args["thickness"]
         else:
             self.thickness=1
-        self.x1=p1[0]/scale[0]
-        self.y1=p1[1]/scale[1]
-        self.z1=p1[2]/scale[2]
-        self.x2=p2[0]/scale[0]
-        self.y2=p2[1]/scale[1]
-        self.z2=p2[2]/scale[2]
+        self.x1=x1/scale[0]
+        self.y1=y1/scale[1]
+        self.z1=z1/scale[2]
+        self.x2=x2/scale[0]
+        self.y2=y2/scale[1]
+        self.z2=z2/scale[2]
 
 class Point(BasicObject):
 
-    def __init__(self, parent, p, *kwargs, **args):
+    # singulersum_gui.py requires explicit parameters x, y, z. Easier this way.
+    def __init__(self, parent, x=0.0, y=0.0, z=0.0, *kwargs, **args):
         super().__init__(parent)
-        self.x = p[0]
-        self.y = p[1]
-        self.z = p[2]
+        self.x = x
+        self.y = y
+        self.z = z
         if "color" in args:
             self.color=args["color"]
         else:
@@ -569,6 +578,8 @@ class Polygon(BasicObject, VectorMath):
         p1 = self.points[1]
         p2 = self.points[2]
         self.normalvector = self.poly_normalvector(p0, p1, p2)
+
+# other drawers
 
 class Function(Object):
 
@@ -698,11 +709,13 @@ class Sphere(Object):
         # make polis
         cnt=0
         # 2021-03-27 ph range begins at -1, so that sphere is closed.
+        #               but there's still a hole...
         for i in range(-1,self.amount-1):
             for j in range(0, self.amount-1):
                 cnt+=1
                 poly = self.polygon( corps[i][j], corps[i+1][j], corps[i+1][j+1], alpha=self.alpha, fill=self.fill, stroke=self.stroke)
                 poly2= self.polygon( corps[i][j], corps[i+1][j+1], corps[i][j+1], alpha=self.alpha, fill=self.fill, stroke=self.stroke)
+        # need to fix normal vectors.
         self.debug("polygon count for this sphere: ", cnt)
 
 class Cube(Object):
@@ -757,20 +770,23 @@ class Cube(Object):
 
 class Plane(Object):
 
-    def __init__(self, xf, yf, zf, df, *kwargs, **args):
+    def __init__(self, parent, xf=1.0, yf=1.0, zf=1.0, df=1.0, *kwargs, **args):
         # define plane as xf*x+yf*y+zf*z+df=0
+        super().__init__(parent, *kwargs, **args)
+        #self.function(x="x", y="y", z="("+str(df)+"-1*"+str(xf)+"*x-1*"+str(yf)+"*y)/"+str(zf), rel="z", amount=10)
         pass
 
 class CoordinateSystem(BasicObject):
 
     # coordinate system injects lines into the PARENT! It's a BasicObject (no Miniverse!)
+    # TODO: thickness is wrongly implemented
 
     def __init__(self, parent, *kwargs, **args):
         super().__init__(parent, *kwargs, **args)
         scale = self.parent.scale
-        self.lineX = self.parent.line( (0.0, 0.0, 0.0), (scale[0], 0, 0), color="green", tickness=5 )
-        self.lineY = self.parent.line( (0.0, 0.0, 0.0), (0, scale[1], 0), color="blue", thickness=5 )
-        self.lineZ = self.parent.line( (0.0, 0.0, 0.0), (0, 0, scale[2]), color="red", thickness=5 )
+        self.lineX = self.parent.line( 0.0, 0.0, 0.0, scale[0], 0, 0, color="green", thickness=1 )
+        self.lineY = self.parent.line( 0.0, 0.0, 0.0, 0, scale[1], 0, color="blue", thickness=1 )
+        self.lineZ = self.parent.line( 0.0, 0.0, 0.0, 0, 0, scale[2], color="red", thickness=1 )
         points = None
         if "points" in args:
             points = args["points"]
@@ -781,7 +797,7 @@ class CoordinateSystem(BasicObject):
                         nx=(float(i)/points*2.0-1.0)*scale[0]
                         ny=(float(j)/points*2.0-1.0)*scale[1]
                         nz=(float(k)/points*2.0-1.0)*scale[2]
-                        self.parent.point( (nx,ny,nz), color="red" )
+                        self.parent.point( nx,ny,nz, color="red" )
 
 
     def update(self):
@@ -789,9 +805,9 @@ class CoordinateSystem(BasicObject):
         changed = False
         if self.parent.showCoordinateSystem is True:
             # TODO: delete old lines first!
-            #sg.line( (0.0, 0.0, 0.0), (scale[0], 0, 0), color="green", tickness=5 )
-            #sg.line( (0.0, 0.0, 0.0), (0, scale[1], 0), color="blue", thickness=5 )
-            #sg.line( (0.0, 0.0, 0.0), (0, 0, scale[2]), color="red", thickness=5 )
+            #sg.line( 0.0, 0.0, 0.0, scale[0], 0, 0, color="green", tickness=5 )
+            #sg.line( 0.0, 0.0, 0.0, 0, scale[1], 0, color="blue", thickness=5 )
+            #sg.line( 0.0, 0.0, 0.0, 0, 0, scale[2], color="red", thickness=5 )
             changed = False
         return changed
 

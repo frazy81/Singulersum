@@ -2,6 +2,7 @@
 # 2021-03-21 ph line_plane_intersection had a bug. distance is C-P and not C-P_prime
 # 2021-03-24 ph line() -> vec_line(), so that line() is Miniverses line()
 # 2021-03-26 ph cross_product was wrong, resulting in wrong normalvector computation
+# 2021-03-27 ph plane -> plane_normalvec
 
 """
     Singulersum.VectorMath()
@@ -67,8 +68,8 @@ class VectorMath(Debug):
         dist = sqrt(line[3]**2+line[4]**2+line[5]**2)
         return (line[0]+lambd*line[3], line[1]+lambd*line[4], line[2]+lambd*line[5], dist)
 
-    def plane(self,normal_vector, point_vector):
-        # plane(normal_vector(list:(x,y,z)), point_on_plane(list:(x,y,z))):
+    def plane_normalvec(self, normal_vector, point_vector):
+        # plane_normalvec(normal_vector(list:(x,y,z)), point_on_plane(list:(x,y,z))):
         # return list:(a,b,c,d,Ox,Oy,Oz) so that: ax+by+cz=d, and O as primary vector
         # (Stützvektor)
         x = normal_vector[0]
@@ -96,7 +97,6 @@ class VectorMath(Debug):
             print("normalvector 0!")
             raise ValueError
         return normalvector
-
 
     # rotate a 3D vector p by azimuth (0-360°), altitude (-90 to +90°), roll (-180° to +180°)
     def rotate(self, p, azimuth=None, altitude=None, roll=None):

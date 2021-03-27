@@ -134,20 +134,24 @@ class SingulersumYaml(Debug):
             obj = parent.object(**namespace)
             if lines is not None:
                 for i in range(0, len(lines), 2):
-                    obj.line(lines[i], lines[i+1])
+                    obj.line(*lines[i], *lines[i+1])
             if points is not None:
                 p0 = points[0]
                 pl = p0
                 for i in range(1, len(points)-1):
-                    obj.line(pl, points[i])
+                    obj.line(*pl, *points[i])
                     pl=points[i]
-                obj.line(points[-1], pl)
+                obj.line(*points[-1], *pl)
 
         elif objtype=="cube":
             obj = parent.cube(**namespace)
 
         elif objtype=="sphere":
             obj = parent.sphere(**namespace)
+
+        elif objtype=="plane":
+            print(namespace)
+            obj = parent.plane(**namespace)
 
         elif objtype=="polygon":
             polygon = namespace.pop("points", None)

@@ -15,6 +15,7 @@
 # 2021-03-25 ph menu remarks if not implemented
 # 2021-03-25 ph getopt
 # 2021-03-27 ph --quit-after / -q parameter (used in /tests/unittest_gui.py)
+# 2021-03-27 ph edit menu, add objects
 
 """
     class SingulersumGUI() and program singulersum_gui.py
@@ -248,12 +249,17 @@ class SingulersumGUI(Tk):
         menubar.add_cascade(label="File", menu=filemenu)
 
         editmenu = Menu(menubar, tearoff=0)
-        editmenu.add_command(label="Undo (not implemented)", command=lambda: self.notImpl())
+
+        editmenu.add_command(label="add point", command=lambda: self.addObject("point", x=0.0, y=0.0, z=0.0, color="#ff0000"))
+        editmenu.add_command(label="add line", command=lambda: self.addObject("line", x1=0.0, y1=0.0, z1=0.0, x2=0.0, y2=0.0, z2=0.0, color="#ff0000"))
+        # TODO: sphere gets distorted, x=0, y=1, z=0.5, r=0.3
+        editmenu.add_command(label="add sphere", command=lambda: self.addObject("sphere", x=0.0, y=0.0, z=0.0, r=0.3, size=1.0, color="#ff0000"))
+        editmenu.add_command(label="add cube", command=lambda: self.addObject("cube", x=0.0, y=0.0, z=0.0, r=0.3, size=1.0, color="#aaaaaa"))
 
         editmenu.add_separator()
-
         editmenu.add_command(label="Cut (not implemented)", command=lambda: self.notImpl())
         editmenu.add_command(label="Copy (not implemented)", command=lambda: self.notImpl())
+        #editmenu.add_command(label="Undo (not implemented)", command=lambda: self.notImpl())
         #editmenu.add_command(label="Paste", command=lambda: self.notImpl())
         #editmenu.add_command(label="Delete", command=lambda: self.notImpl())
         #editmenu.add_command(label="Select All", command=lambda: self.notImpl())
@@ -360,6 +366,59 @@ class SingulersumGUI(Tk):
             self.settingsBrowserPanel.place_forget()
             for child in self.settingsBrowserPanel.winfo_children():
                 child.destroy()
+
+    def addObject(self, object_type, **args):
+        row = 0
+        column = 0
+
+        top = Toplevel(self)
+
+        # coming from menu, settings placed in a Toplevel (new Window)
+        top.title("add a new singulersum object")
+        top.geometry( "{:d}x{:d}".format(800, int(800/4*2)) )
+        top.bind('<Escape>', lambda e: top.destroy())
+
+        entries = []
+
+        label = Label(top, text="")
+        label.grid(row=row, column=column, sticky=W)
+        row+=1
+
+        for name, value in args.items():
+            label = Label(top, text=name)
+            label.grid(row=row, column=column, sticky=W)
+            column+=1
+            objectsetting = Entry(top)
+            objectsetting.insert(0, value)
+            entries.append( { "object_type":object_type, "name":name, "value":objectsetting, "type":type(value).__name__ } )
+            objectsetting.grid(row=row, column=column, sticky=W)
+            column=0
+            row+=1
+
+        button = Button(top, text="Apply", command=lambda: self.addObjectMake(top, entries, True))
+        button.grid(row=row, column=column, sticky=W)
+        column+=1
+        button = Button(top, text="Cancel", command=lambda: self.addObjectMake(top, entries, False))
+        button.grid(row=row, column=column, sticky=W)
+
+    def addObjectMake(self, top, entries, apply=False):
+        if apply is True:
+            args = {}
+            for entry in entries:
+                value = entry["value"].get()
+                if entry["type"]=="float":
+                    value = float(value)
+                elif entry["type"]=="bool":
+                    value = bool(value)
+                elif entry["type"]=="string":
+                    value = str(value)
+                name = entry["name"]
+                args[name]=value
+            type = entries[0]["object_type"]
+            obj=getattr(self.sg, type)(**args)
+            print("TkGUI.addObjectMake(): made a new object", obj)
+        top.destroy()
+        self.isShowing=True
 
     def quit(self):
         print("terminating the application")
