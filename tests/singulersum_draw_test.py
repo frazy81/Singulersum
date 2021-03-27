@@ -57,7 +57,7 @@ class Draw(Tk):
             (400,100)
         )
 
-        self.draw2d.polygon(*poly, fill="white", stroke="#ff0000", alpha=0.2, zIndex=3.5)
+        self.draw2d.polygon(*poly, fill="white", stroke="#ff0000", alpha=0, zIndex=3.5)
 
         poly = (
             (420,120),
@@ -65,7 +65,7 @@ class Draw(Tk):
             (480,120)
         )
 
-        self.draw2d.polygon(*poly, fill="red", stroke="#ff0000", alpha=0.2, zIndex=4.5)
+        self.draw2d.polygon(*poly, fill="red", stroke="#ff0000", alpha=0, zIndex=4.5)
 
         val = self.draw2d.zIndex(405,105)
         if math.isclose(val, 3.5)==False:
@@ -84,6 +84,29 @@ class Draw(Tk):
         if math.isclose(val, 4.5)==False:
             print("assertion error: 480x120 should have zIndex: 4.5, but is", val)
             exit(0)
+
+        # alpha test
+        poly = (
+            (500, 190),
+            (500, 260),
+            (600, 260),
+            (600, 190),
+        )
+        self.draw2d.polygon(*poly, fill="green", stroke="white", alpha=0, zIndex=None)
+
+        poly = (
+            (520, 200),
+            (520, 250),
+            (580, 200)
+        )
+        self.draw2d.polygon(*poly, fill="blue", stroke="#ff0000", alpha=100, zIndex=3)
+
+        poly = (
+            (620, 200),
+            (620, 250),
+            (680, 200)
+        )
+        self.draw2d.polygon(*poly, fill="blue", stroke="#ff0000", alpha=100, zIndex=3)
 
         self.showSingle()
 

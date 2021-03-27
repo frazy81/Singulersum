@@ -14,6 +14,7 @@
 # 2021-03-25 ph file new/open
 # 2021-03-25 ph menu remarks if not implemented
 # 2021-03-25 ph getopt
+# 2021-03-27 ph --quit-after / -q parameter (used in /tests/unittest_gui.py)
 
 """
     class SingulersumGUI() and program singulersum_gui.py
@@ -50,8 +51,10 @@ import getopt
 
 class SingulersumGUI(Tk):
 
-    def __init__(self, verbose=True, exitImmediate=False, quitAfterAnimation=False, inputFile=None):
+    def __init__(self, verbose=True, exitImmediate=False, quitAfterAnimation=False, quitAfter=None, inputFile=None):
         super().__init__()
+
+        self.startTime = time.time()
 
         # configureCanvas is changing these to the actual canvas size
         self.width = 2048
@@ -60,6 +63,7 @@ class SingulersumGUI(Tk):
 
         self.verbose = verbose
         self.quitAfterAnimation = quitAfterAnimation
+        self.quitAfter = quitAfter
 
         self.isShowing = True      # self.show() running?
         self.isTerminating = False
@@ -163,6 +167,9 @@ class SingulersumGUI(Tk):
     def show(self):
         while True:
             print("state: isShowing=", self.isShowing, "isPlaying=", self.isPlaying)
+            if self.quitAfter is not None and self.startTime+self.quitAfter<=time.time():
+                print("quitAfter "+str(self.quitAfter)+"s elapsed. Terminating.")
+                self.isTerminating=True
             if self.isTerminating is True:
                 # terminating is stepping out of this while!
                 print("show(): received terminate instruction. Finish work and close application") # needs to be done here, since everything else is async and only this method is actually always running. Therefore a sleep() in quit() does not change anything... Kind of. Well it's strange...
@@ -253,6 +260,7 @@ class SingulersumGUI(Tk):
         menubar.add_cascade(label="Edit", menu=editmenu)
 
         examplesmenu = Menu(menubar, tearoff=0)
+        examplesmenu.add_command(label="singulersum", command=lambda: self.openYaml("../yaml/singulersum.yaml"))
         examplesmenu.add_command(label="tiny house", command=lambda: self.openYaml("../yaml/tiny_house.yaml"))
         examplesmenu.add_command(label="lighttest", command=lambda: self.openYaml("../yaml/lighttest.yaml"))
         examplesmenu.add_command(label="cube", command=lambda: self.openYaml("../yaml/cube.yaml"))
@@ -622,16 +630,19 @@ def usage():
     print(" -v                      verbose (currently always verbose)")
     print(" -i yaml-file            open the yaml file")
     print(" --exit-immediately      exits straight after rendering the page (for testing)")
+    print(" --quit-after-animation  quit program after animation")
+    print(" --quit-after <secs>     quit program after <secs> seconds runtime")
     return 0
 
 def main():
     verbose             = False
     exitImmediate       = False
     quitAfterAnimation  = False
+    quitAfter           = None
     inputFile           = None
 
     try:
-        optlist, args = getopt.getopt(sys.argv[1:], "vi:heq", ["verbose", "input=", "help", "exit-immediate", "quit-after-animation"])
+        optlist, args = getopt.getopt(sys.argv[1:], "vi:heqa:", ["verbose", "input=", "help", "exit-immediate", "quit-after-animation", "quit-after"])
     except getopt.GetoptError as err:
         print(err)
         usage()
@@ -648,9 +659,11 @@ def main():
             exitImmediate = True
         elif name in ["-q", "--quit-after-animation"]:
             quitAfterAnimation=True
+        elif name in ["-a", "--quit-after"]:
+            quitAfter=float(value)
 
 
-    gui = SingulersumGUI(verbose=verbose, exitImmediate=exitImmediate, quitAfterAnimation=quitAfterAnimation, inputFile=inputFile)
+    gui = SingulersumGUI(verbose=verbose, exitImmediate=exitImmediate, quitAfterAnimation=quitAfterAnimation, quitAfter=quitAfter, inputFile=inputFile)
     gui.mainloop()
 
 exit(main())

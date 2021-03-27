@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 # 2021-03-25 ph Created
+# 2021-03-27 ph -a / --quit-after 10.0 test speedup
 
 """
     unittest_gui.py
@@ -31,7 +32,7 @@ class Tests(unittest.TestCase):
         os.chdir("../scripts")
         for file in os.listdir("../yaml"):
             print("yaml file", file)
-            ret = os.system("python3 ./singulersum_gui.py -qvi ../yaml/"+file)
+            ret = os.system("python3 ./singulersum_gui.py -a 10.0 -vi ../yaml/"+file)
             ret = ret>>8
             self.assertEqual(ret, 0)
 

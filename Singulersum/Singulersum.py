@@ -26,6 +26,7 @@
 # 2021-03-25 ph default camera always stays (and reported back to GUI using callback)
 # 2021-03-26 ph polygon normal vector calculus corrected
 # 2021-03-26 ph cube fixes (colors, less z-fighting, normal vectors corrected)
+# 2021-03-27 ph close sphere fix (sphere was not "closed")
 
 """
     class Singulersum.Singulersum()
@@ -142,20 +143,11 @@ class Miniverse(VectorMath, Debug):
         if "visibility" in args:
             self.visibility = args["visibility"]
         self.name = "AnonymousObject"
-        if "name" in args:
-            self.name = args["name"]
-        if "scale" in args:
-            self.scale=args["scale"]
-        if "size" in args:
-            self.size=args["size"]
-        if "place" in args:
-            self.place=args["place"]
-        if "azimuth" in args:
-            self.azimuth=args["azimuth"]
-        if "altitude" in args:
-            self.altitude=args["altitude"]
-        if "roll" in args:
-            self.roll=args["roll"]
+        auto_fill = ["name", "scale", "size", "place", "azimuth", "altitude", "roll", "fill", "stroke", "alpha"]
+        for name in auto_fill:
+            if name in args and hasattr(self, name):
+                self.debug("auto fill "+name+" with "+str(args[name]))
+                setattr(self, name, args[name])
 
     def top(self):
         if self.top is not None:
@@ -224,7 +216,7 @@ class Miniverse(VectorMath, Debug):
     def sphere(self, name=None, *kwargs, **args):
         self.object_count += 1
         if name is None:
-            name = "line#"+str(self.object_count)
+            name = "sphere#"+str(self.object_count)
         obj = Sphere(self, *kwargs, **args)
         self.objects[name]=obj
         return obj
@@ -545,11 +537,13 @@ class Polygon(BasicObject, VectorMath):
 
     vec = None
 
-    def __init__(self, sg, *kwargs, normalvector=None, color=(255, 255, 255), **args):
+    def __init__(self, sg, *kwargs, normalvector=None, fill="white", stroke="white", alpha=0, **args):
+        self.fill=fill
+        self.stroke=stroke
+        self.alpha=alpha
         super().__init__(sg, **args)
         VectorMath.__init__(self)
         self.normalvector = normalvector        # normal vector of the poly
-        self.color = color
         scale = sg.scale
         self.points = []
         for point in kwargs:
@@ -657,6 +651,9 @@ class Function(Object):
 class Sphere(Object):
 
     def __init__(self, parent, x=0.0, y=0.0, z=0.0, r=1.0, amount=20, *kwargs, **args):
+        self.alpha = 0.3
+        self.fill = [255, 255, 255]
+        self.stroke = [255, 255, 255]
         super().__init__(parent, *kwargs, **args)
         self.amount=amount
         self.x = x
@@ -687,12 +684,13 @@ class Sphere(Object):
                 corps[the][alp] = (x,y,z)
         # make polis
         cnt=0
-        for i in range(0,self.amount-1):
-            for j in range(0, self.amount-1):
+        # 2021-03-27 ph range begins at -1, so that sphere is closed.
+        for i in range(-1,self.amount-1):
+            for j in range(-1, self.amount-1):
                 cnt+=1
-                poly = self.polygon( corps[i][j], corps[i+1][j], corps[i+1][j+1])
-                poly2= self.polygon( corps[i][j], corps[i+1][j+1], corps[i][j+1])
-        self.debug("polygon count for this function: ", cnt)
+                poly = self.polygon( corps[i][j], corps[i+1][j], corps[i+1][j+1], alpha=self.alpha, fill=self.fill, stroke=self.stroke)
+                poly2= self.polygon( corps[i][j], corps[i+1][j+1], corps[i][j+1], alpha=self.alpha, fill=self.fill, stroke=self.stroke)
+        self.debug("polygon count for this sphere: ", cnt)
 
 class Cube(Object):
 

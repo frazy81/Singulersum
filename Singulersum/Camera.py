@@ -370,7 +370,7 @@ class Camera(Miniverse):
                         # show "normal" luminescense as if viewed from front
                         colorize = abs(90-angle)/90
                 #self.debug("polygon colorize", colorize)
-                polys.append( { "points":poly, "normalvector":normalvector, "colorize":colorize, "color":obj.color, "name":obj.name } )
+                polys.append( { "points":poly, "normalvector":normalvector, "colorize":colorize, "fill":obj.fill, "stroke":obj.stroke, "alpha":obj.alpha, "name":obj.name } )
             elif isinstance(obj, CoordinateSystem):
                 # ignore it! It added Lines to the parent context
                 pass
@@ -402,7 +402,7 @@ class Camera(Miniverse):
                         if isSpecialContext:
                             pt = self.applyContext(context, pt)[0]
                         npoints.append(pt)
-                    poly = { "points":npoints, "normalvector":normalvector, "colorize":colorize, "color":p["color"], "name":p["name"] }
+                    poly = { "points":npoints, "normalvector":normalvector, "colorize":colorize, "fill":p["fill"], "stroke":p["stroke"], "alpha":p["alpha"], "name":p["name"] }
                     polys.append( poly )
                 pass
             else:
@@ -502,16 +502,16 @@ class Camera(Miniverse):
             if self.parent.useFastHiddenPolyCheck is False:
                 hidden=False
             if hidden is False:
-                color = self.draw2d.getColor(poly["color"])
+                fill = self.draw2d.getColor(poly["fill"])
+                stroke = self.draw2d.getColor(poly["stroke"])
+                alpha = poly["alpha"]
                 if poly["colorize"]>0:
-                    color = (int(poly["colorize"]*color[0]), int(poly["colorize"]*color[1]), int(poly["colorize"]*color[2]))
+                    fill = (int(poly["colorize"]*fill[0]), int(poly["colorize"]*fill[1]), int(poly["colorize"]*fill[2]))
                 else:
-                    color = (0,255,0)
+                    fill = (0,255,0)
                 poly_drawn+=1
                 if self.parent.zBuffering is False:
                     poly["distance"]=None
-                fill = color
-                stroke = color
                 if self.parent.polyGrid is True:
                     stroke = (255, 255, 255)
                 if self.parent.polyOnlyGrid is True:
@@ -520,11 +520,14 @@ class Camera(Miniverse):
                 if self.parent.polyGrid is False and self.parent.polyOnlyGrid is False:
                     stroke = None
                 if self.parent.polyOnlyPoint is False:
-                    self.draw2d.polygon(*poly["points"], stroke=stroke, fill=fill, zIndex=poly["distance"])
+                    if alpha>0:
+                        # object is partly transparent, disregard distance!
+                        poly["distance"]=None
+                    self.draw2d.polygon(*poly["points"], stroke=stroke, fill=fill, alpha=alpha, zIndex=poly["distance"])
                 else:
                     # only one point per polygon. Small performance upgrade and good
                     # enough in most cases.
-                    self.draw2d.point(poly["points"][0][0], poly["points"][0][1], color="white")
+                    self.draw2d.point(poly["points"][0][0], poly["points"][0][1], color=stroke, alpha=alpha)
             else:
                 poly_hidden+=1
         self.debug("polygons drawing complete.", timeit=poly_timing)

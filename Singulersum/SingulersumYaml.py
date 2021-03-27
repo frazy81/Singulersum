@@ -146,6 +146,9 @@ class SingulersumYaml(Debug):
         elif objtype=="cube":
             obj = parent.cube(**namespace)
 
+        elif objtype=="sphere":
+            obj = parent.sphere(**namespace)
+
         elif objtype=="polygon":
             polygon = namespace.pop("points", None)
             obj = parent.object(**namespace)

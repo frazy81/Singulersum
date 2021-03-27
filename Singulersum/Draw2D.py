@@ -5,8 +5,7 @@
 # 2021-03-13 ph clear() now using the way faster list comprehensions instead of this odd appending and for loops (the for's took 0.5s to zero the whole zBuf/data arrays)
 # 2021-03-14 ph Vector Algebra is moved to VectorMath.py
 # 2021-03-15 ph Performance Boost with new array method!
-
-# TODO: zIndex for line is kind of undefined (which point, what's the difference)
+# 2021-03-27 ph alpha not part of color fix
 
 """
     class Singulersum.Draw2D()
@@ -31,6 +30,8 @@
 
     img = draw2d.image()    # RGBA bytes() image, each color is 8-bit encoded.
 """
+
+# TODO: zIndex for line is kind of undefined
 
 import math
 import struct
@@ -123,38 +124,37 @@ class Draw2D(Debug):
         except IndexError:
             return (-1, -1, -1)
 
-    def getColor(self, color="white", alpha=0):
+    def getColor(self, color="white"):
         if color=="white":
-            return (255, 255, 255, alpha)
+            return (255, 255, 255)
         elif color=="black":
-            return (255, 255, 255, alpha)
+            return (255, 255, 255)
         elif color=="red":
-            return (255, 0, 0, alpha)
+            return (255, 0, 0)
         elif color=="green":
-            return (0, 255, 0, alpha)
+            return (0, 255, 0)
         elif color=="blue":
-            return (0, 0, 255, alpha)
-        elif isinstance(color, tuple):
+            return (0, 0, 255)
+        elif isinstance(color, tuple) or isinstance(color, list):
             if len(color)==3:
-                return ( int(color[0]), int(color[1]), int(color[2]), 0 )
-            elif len(color)==4:
-                return ( int(color[0]), int(color[1]), int(color[2]), int(color[3]) )
+                return ( int(color[0]), int(color[1]), int(color[2]) )
+            else:
+                print("Draw2D() expects 3 numbers (R,G,B) for a tuple defined color")
+                exit(0)
         elif str(color)[0]=="#":
             if len(color)==7:
-                return (int(color[1:3], 16), int(color[3:5], 16), int(color[5:7], 16), 0)
-            elif len(color)==8:
-                return (int(color[1:3], 16), int(color[3:5], 16), int(color[5:7], 16), int(color[7:9], 16))
+                return (int(color[1:3], 16), int(color[3:5], 16), int(color[5:7], 16))
             else:
-                print(color, " is not a supported color")
-                return (255, 255, 255, 255)
+                print("Draw2D() expects 3 numbers (R,G,B) for a tuple defined color")
+                exit(0)
         else:
             print(color, " is not a supported color")
-            return (255, 255, 255, 255)
+            return (255, 255, 255)
 
     def point(self, x, y, color="white", alpha=0, zIndex=None):  # alpha=0: solid, alpha=255: transp.
         if color is None:
             return False
-        color = self.getColor(color, alpha)
+        color = self.getColor(color)
         if alpha!=0:
             # get the "old" point color
             (r,g,b) = self.get(x, y)

@@ -42,4 +42,3 @@ f1:
     rel: z
     scale: [10.0, 10.0, 10.0]
     size: 0.9
-default: cam
