@@ -30,6 +30,7 @@
 # 2021-03-27 ph animation did not recognize radius fix
 # 2021-03-27 ph stl maxX,maxY,maxZ -> scale fix. scale needs to be the absolute maximum
 # 2021-03-27 ph polygon color now fill=<color>, stroke=<color>
+# 2021-03-28 ph plane
 
 """
     class Singulersum.Singulersum()
@@ -582,13 +583,12 @@ class Polygon(BasicObject, VectorMath):
 
 class Function(Object):
 
-    def __init__(self, parent, x="x", y="y", z="z", rel=None, amount=20, *kwargs, **args):
+    def __init__(self, parent, x="x", y="y", z="z", rel=None, amount=20, alpha=0, fill="white", stroke=None, *kwargs, **args):
         super().__init__(parent, *kwargs, **args)
         self.amount=amount
-        x = self.replaceKnown(x)
-        y = self.replaceKnown(y)
-        z = self.replaceKnown(z)
         self.rel=rel
+        self.alpha=alpha
+        self.color=color
         if rel is None:
             # check for x in x
             if x.find("x")==-1:
@@ -655,15 +655,11 @@ class Function(Object):
         for i in range(0,amount-1):
             for j in range(0, amount-1):
                 cnt+=1
-                poly = self.polygon( corps[i][j], corps[i+1][j], corps[i+1][j+1])
-                poly2= self.polygon( corps[i][j], corps[i+1][j+1], corps[i][j+1])
+                poly = self.polygon( corps[i][j], corps[i+1][j], corps[i+1][j+1], alpha=self.alpha, fill=self.fill, stroke=self.stroke)
+                poly2= self.polygon( corps[i][j], corps[i+1][j+1], corps[i][j+1], alpha=self.alpha, fill=self.fill, stroke=self.stroke)
                 pass
 
         self.debug("polygon count for this function: ", cnt)
-
-    def replaceKnown(self, arg):
-        #arg=arg.replace("sin", "sin")
-        return arg
 
     def eval(self, x, y, z):
         nx=eval(self.x, globals(), {"x":x, "y":y, "z":z} )
@@ -673,8 +669,8 @@ class Function(Object):
 
 class Sphere(Object):
 
-    def __init__(self, parent, x=0.0, y=0.0, z=0.0, r=1.0, amount=20, *kwargs, **args):
-        self.alpha = 0.3
+    def __init__(self, parent, x=0.0, y=0.0, z=0.0, r=1.0, amount=20, alpha=0, *kwargs, **args):
+        self.alpha = alpha
         self.fill = [255, 255, 255]
         self.stroke = [255, 255, 255]
         super().__init__(parent, *kwargs, **args)
@@ -697,10 +693,10 @@ class Sphere(Object):
                 corps[i].append([])
         for the in range(0, self.amount):
             for alp in range(0, self.amount):
-                # 2021-03-21 ph without +0.0001 we have collinear points and normal can't
+                # 2021-03-21 ph without +1e-05 we have collinear points and normal can't
                 #               be calculated.
-                theta = (the/self.amount)*2*pi+0.0001
-                alpha = (alp/self.amount)*pi+0.0001
+                theta = (the/(self.amount-1))*2*pi+1e-05
+                alpha = (alp/(self.amount-1))*pi+1e-05
                 x = self.x + self.r*cos(theta)*sin(alpha)
                 y = self.y + self.r*sin(theta)*sin(alpha)
                 z = self.z + self.r*cos(alpha)
@@ -708,7 +704,6 @@ class Sphere(Object):
         # make polis
         cnt=0
         # 2021-03-27 ph range begins at -1, so that sphere is closed.
-        #               but there's still a hole...
         for i in range(-1,self.amount-1):
             for j in range(0, self.amount-1):
                 cnt+=1
@@ -719,12 +714,13 @@ class Sphere(Object):
 
 class Cube(Object):
 
-    def __init__(self, parent, x=0.0, y=0.0, z=0.0, r=1.0, *kwargs, **args):
+    def __init__(self, parent, x=0.0, y=0.0, z=0.0, r=1.0, alpha=0, *kwargs, **args):
         super().__init__(parent, *kwargs, **args)
         self.x = x
         self.y = y
         self.z = z
         self.r = r
+        self.alpha = alpha
         self.createPolygons()
 
     def update(self):
@@ -749,31 +745,76 @@ class Cube(Object):
         p7 = (x-r, y-r, z-r)
 
         # front
-        self.polygon( p3, p1, p0, name="front1", fill="white" )
-        self.polygon( p3, p2, p1, name="front2", fill="white" )
+        self.polygon( p3, p1, p0, name="front1", fill="white", alpha=self.alpha )
+        self.polygon( p3, p2, p1, name="front2", fill="white", alpha=self.alpha )
         # top
-        self.polygon( p0, p1, p5, name="top1", fill="#ff0000" )
-        self.polygon( p0, p5, p4, name="top2", fill="#ff0000" )
+        self.polygon( p0, p1, p5, name="top1", fill="#ff0000", alpha=self.alpha )
+        self.polygon( p0, p5, p4, name="top2", fill="#ff0000", alpha=self.alpha )
         # left
-        self.polygon( p0, p4, p7, name="left1", fill="#00f000" )
-        self.polygon( p0, p7, p3, name="left2", fill="#00f000" )
+        self.polygon( p0, p4, p7, name="left1", fill="#00f000", alpha=self.alpha )
+        self.polygon( p0, p7, p3, name="left2", fill="#00f000", alpha=self.alpha )
         # right
-        self.polygon( p1, p6, p5, name="right1", fill="#0000ff" )
-        self.polygon( p1, p2, p6, name="right2", fill="#0000ff"  )
+        self.polygon( p1, p6, p5, name="right1", fill="#0000ff", alpha=self.alpha )
+        self.polygon( p1, p2, p6, name="right2", fill="#0000ff", alpha=self.alpha )
         # bottom
-        self.polygon( p3, p7, p6, name="bottom1", fill="#ffff00"  )
-        self.polygon( p3, p6, p2, name="bottom2", fill="#ffff00" )
+        self.polygon( p3, p7, p6, name="bottom1", fill="#ffff00", alpha=self.alpha )
+        self.polygon( p3, p6, p2, name="bottom2", fill="#ffff00", alpha=self.alpha )
         # back
-        self.polygon( p4, p5, p6, name="back1", fill="#00ffff" )
-        self.polygon( p4, p6, p7, name="back2", fill="#00ffff" )
+        self.polygon( p4, p5, p6, name="back1", fill="#00ffff", alpha=self.alpha )
+        self.polygon( p4, p6, p7, name="back2", fill="#00ffff", alpha=self.alpha )
 
 class Plane(Object):
 
-    def __init__(self, parent, xf=1.0, yf=1.0, zf=1.0, df=1.0, *kwargs, **args):
+    def __init__(self, parent, x=0.0, y=0.0, z=0.0, v1x=0.0, v1y=1.0, v1z=0.0, v2x=0.0, v2y=0.0, v2z=1.0, amount=20, alpha=0, fill="white", stroke=None, *kwargs, **args):
         # define plane as xf*x+yf*y+zf*z+df=0
+        self.amount = amount
+        self.alpha = alpha
+        self.fill = fill
+        self.stroke = stroke
+
         super().__init__(parent, *kwargs, **args)
-        #self.function(x="x", y="y", z="("+str(df)+"-1*"+str(xf)+"*x-1*"+str(yf)+"*y)/"+str(zf), rel="z", amount=10)
-        pass
+
+        self.x = x
+        self.y = y
+        self.z = z
+        self.v1x = v1x
+        self.v1y = v1y
+        self.v1z = v1z
+        self.v2x = v2x
+        self.v2y = v2y
+        self.v2z = v2z
+
+        self.createPolygons()
+
+    def createPolygons(self):
+        i=-1
+        j=-1
+        amount = self.amount
+        stepper = 1.0/amount
+        corps = []
+        for i in range(0, amount):
+            corps.append([])
+            for j in range(0, amount):
+                corps[i].append([])
+        v = [self.v1x, self.v1y, self.v1z]
+        s = [self.v2x, self.v2y, self.v2z]
+        for i in range(0,amount):
+            for j in range(0, amount):
+                p = (self.x, self.y, self.z)
+                p = self.vec_add(p, self.vec_mul_scalar(v, i/amount) )
+                p = self.vec_add(p, self.vec_mul_scalar(s, j/amount) )
+                corps[i][j] = p
+                print(p)
+        # make polis
+        cnt=0
+        for i in range(0,amount-1):
+            for j in range(0, amount-1):
+                cnt+=1
+                poly = self.polygon( corps[i][j], corps[i+1][j], corps[i+1][j+1], alpha=self.alpha, fill=self.fill, stroke=self.stroke)
+                poly2= self.polygon( corps[i][j], corps[i+1][j+1], corps[i][j+1], alpha=self.alpha, fill=self.fill, stroke=self.stroke)
+                pass
+
+        self.debug("polygon count for this plane: ", cnt)
 
 class CoordinateSystem(BasicObject):
 

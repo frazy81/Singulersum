@@ -27,7 +27,7 @@ universe_sphere:
     y: 0.0
     z: 0.0
     r: 1.0
-    alpha: 0
+    alpha: 100
     fill: [0, 0, 255]
     stroke: [255, 0, 0]
 camera_show:
@@ -41,7 +41,14 @@ camera_view_line:
     points: [ [0.8713, 0.3746, 0.3171], [0.0, 0.0, 0.0] ]
 tangential_plane_e:
     type: plane
-    xf: 1.0
-    yf: 0.0
-    zf: 0.0
-    df: -1.0
+    v1x: 0
+    v1y: 1
+    v1z: 0
+    v2x: 0
+    v2y: 0
+    v2z: 1
+    size: 2.0
+    place: [-1, 0, 0]
+    alpha: 150
+    fill: white
+    stroke: red
