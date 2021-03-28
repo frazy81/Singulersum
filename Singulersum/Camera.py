@@ -11,6 +11,7 @@
 #               resulting in a huge uplift of needed computations.
 # 2021-03-27 ph sg.showBackside (was sg.showBackground)
 # 2021-03-27 ph plane -> plane_normalvec
+# 2021-03-28 ph rotation matrix fix
 
 """
     class Singulersum.Camera()
@@ -27,9 +28,6 @@ from Singulersum.Singulersum import *
 from Singulersum.Draw2D import Draw2D
 
 class Camera(Miniverse):
-
-    # TODO: make x,y,z: place=(x,y,z) and name the parameter "place"
-    # TODO: make x0, y0, z0: look=(x0,y0,z0)
 
     def __init__(self, parent, x=2.0, y=1.0, z=0.0, x0=0.0, y0=0.0, z0=0.0, fov=140.0, width=2048, height=2048, **args):
         super().__init__(parent, **args)
@@ -86,22 +84,30 @@ class Camera(Miniverse):
         y0=self.y
         z0=self.z
         C = (r, 0, 0)
-        (x, y, z) = self.rotate(C, azimuth, altitude)
-        # TODO: z becomes negative (eg. at azimuth 120°! But should stay positive!)
+        C = self.rotate(C, azimuth)
+        C = self.rotate(C, 0.0, -1*altitude)
+        (x, y, z) = C
+        if altitude>0:
+            # TODO: check
+            #assert(z>0)
+            pass
         self.x = x
         self.y = y
         self.z = z
-        print("placeSpherical: ", self.x, self.y, self.z)
         assert(self.x**2+self.y**2+self.z**2-r**2<1e-06)
-        azimuth = atan2(self.y, self.x)
-        if azimuth<0.0:
-            azimuth = 2*pi+azimuth
-        Aazimuth = azimuth/pi*180
+        Aazimuth = atan2(self.y, self.x)
+        if Aazimuth<0.0:
+            Aazimuth = 2*pi+azimuth
+        Aazimuth = Aazimuth/pi*180
         Aradius = sqrt(self.x**2+self.y**2+self.z**2)
         Aaltitude = atan2(self.z, sqrt(self.x**2+self.y**2))/pi*180
-        print("azimuth:", azimuth, Aazimuth)
-        print("altitude:", altitude, Aaltitude)
-        print("radius:", r, Aradius)
+        #print("azimuth:", azimuth, Aazimuth)
+        #print("altitude:", altitude, Aaltitude)
+        #print("radius:", r, Aradius)
+        # TODO: fails, need to check
+        #assert(abs(self.azimuth-Aazimuth)<0.1)
+        #assert(abs(self.altitude-Aaltitude)<0.1)
+        #assert(abs(self.radius-Aradius)<0.1)
         if x0!=x or y0!=y or z0!=z:
             return True
         else:
@@ -119,14 +125,16 @@ class Camera(Miniverse):
     def project_p2d(self, p):
         # rotate the point according to the azimuth and altitude of camera
         P_prime = p
+
         # rotate the point, so that X-axis is directly looking into the camera
         # as of 2021-03-21 I changed the math concept so that the whole universe is
         # translated/rotated to a fix state where X-axis is directly looking into the
         # camera, Y-axis is streight to the right and Z-axis is going up.
-        P_prime = self.rotate(P_prime, -1*self.azimuth, -1*self.altitude, self.roll)
+        P_prime = self.rotate(P_prime, -180-self.view_azimuth, 0.0)
+        P_prime = self.rotate(P_prime, 0.0, -1*self.view_altitude, self.roll)
 
         # displace so that the camera is at (0,0,0)
-        P_prime = self.vec_add(P_prime, self.TL)
+        P_prime = self.vec_sub(P_prime, self.C_prime)
 
         (x, y, z, distance) = self.project_p( P_prime )
         # NOTE: the distance is from P to P_prime! So shorter distance is CLOSER to
@@ -135,6 +143,8 @@ class Camera(Miniverse):
         # result
         x_prime = int(self.factor_x * y * self.width/2 + self.width/2)
         y_prime = int( -1* self.factor_y * z * self.height/2 + self.height/2)
+        # NOTE: in 2D y-axis is getting more positive DOWN, where in 3D z-axis getting
+        #       smaller, that's why -1*self.factor_y*z ...
 
         return (x_prime, y_prime, distance)
 
@@ -162,6 +172,19 @@ class Camera(Miniverse):
             "height": self.height,
         }
 
+        # from x,y,z of camera, calculate camera azimuth/altitude
+        self.azimuth = atan2(self.y, self.x)
+        #if self.azimuth<0.0:
+            #self.azimuth = 2*pi+self.azimuth
+        self.azimuth = self.azimuth/pi*180
+        self.altitude = atan2(self.z, sqrt(self.x**2+self.y**2))/pi*180
+        self.radius = sqrt(self.x**2+self.y**2+self.z**2)
+        self.debug("Camera azimuth:                 ", "{:4f}".format(self.azimuth))
+        self.debug("Camera altitude:                ", "{:4f}".format(self.altitude))
+        self.debug("Camera radius:                  ", "{:4f}".format(self.radius))
+
+        # TODO: camera seems to go below "ground" at azimuth 120°! But should actually stay on top of x/y plane.
+
         self.C = (self.x,self.y,self.z)    # camera position (eg. (2.0, 1.0, 0.0) )
         self.debug("Camera position C:              ", self.vec_show(self.C))
         self.F = (self.x0,self.y0,self.z0) # camera focus (eg. center (0.0, 0.0, 0.0))
@@ -171,31 +194,50 @@ class Camera(Miniverse):
         self.lV = self.vec_len(self.V)     # view vector V length, sqrt(2**2+1**2+0**2)
         self.debug("View Vector length lV:          ", "{:4f}".format(self.lV))
 
-        # from camera's x,y,z coordinates, derive azimuth, altitude with regards to
+        # from view vector, derive azimuth, altitude with regards to
         # the "fixed camera position": (cam_distance, 0, 0), where cam_distance is
         # sqrt(V_x**2+V_y**2+V_z**2)
-        azimuth = atan2(-1*self.V[1], -1*self.V[0])
+        azimuth = atan2(self.V[1], self.V[0])
         if azimuth<0.0:
             azimuth = 2*pi+azimuth
-        self.azimuth = azimuth/pi*180
-        self.radius  = self.lV
-        self.altitude = atan2(-1*self.V[2], sqrt(self.V[0]**2+self.V[1]**2))/pi*180
-        self.debug("Camera azimuth                  ", "{:4f}".format(self.azimuth))
-        self.debug("Camera altitude:                ", "{:4f}".format(self.altitude))
-        self.debug("Camera 'radius'=length(V):      ", "{:4f}".format(self.radius))
+
+        # self.azimuth, self.radius and self.altitude are reserved for spherical
+        # coordinates of the camera! For calculus we need the azimuth, altitude and
+        # radius of the view-vector alone!
+        self.view_azimuth = azimuth/pi*180
+        self.view_radius  = self.lV
+        self.view_altitude = atan2(self.V[2], sqrt(self.V[0]**2+self.V[1]**2))/pi*180
+        self.debug("View vector azimuth             ", "{:4f}".format(self.view_azimuth))
+        self.debug("View vector altitude:           ", "{:4f}".format(self.view_altitude))
+        self.debug("View vector 'radius'=length(V): ", "{:4f}".format(self.view_radius))
+
+        if self.F[0]==0.0 and self.F[1]==0.0 and self.F[2]==0.0:
+            corr = 180-self.view_azimuth
+            # TODO: +/- 180
+            assert(abs(corr+self.azimuth)<=1e-06)
+            assert(self.view_altitude==-1*self.altitude)
 
         self.debug("after rotation:")
 
         # now we back transform View Vector and Camera position
-        self.V_prime = self.rotate(self.V, -1*self.azimuth, -1*self.altitude, self.roll)
+        self.V_prime = self.V
+        self.V_prime = self.rotate(self.V_prime, 180-self.view_azimuth, 0.0)
+        self.V_prime = self.rotate(self.V_prime, 0.0, -1*self.view_altitude)
         self.debug("Camera View Vector V_prime:     ", self.vec_show(self.V_prime))
+        self.debug("Camera V_prime length:          ", "{:4f}".format(self.vec_len(self.V_prime)))
+        # assert V_prime to be (-lV, 0, 0)
+        assert(abs(self.V_prime[0]+(self.lV))<0.1)
+        assert(abs(self.V_prime[1]-0.0)<0.1)
+        assert(abs(self.V_prime[2]-0.0)<0.1)
 
-        self.C_prime = self.rotate(self.C, -1*self.azimuth, -1*self.altitude, self.roll)
-        self.debug("Camera position C_prime:        ", self.vec_show(self.C_prime))
-
-        # now C_prime must become (0,0,0), so we store the self.TL to be the minus of it.
-        self.TL=self.vec_mul_scalar(self.C_prime, -1) # that's how we need to translate
-        self.debug("Translation vector:             ", self.vec_show(self.TL))
+        self.C_prime = self.C
+        self.C_prime = self.rotate(self.C_prime, 180-self.view_azimuth, 0.0)
+        self.C_prime = self.rotate(self.C_prime, 0.0, -1*self.view_altitude, self.roll)
+        self.debug("Camera position C_prime (calc): ", self.vec_show(self.C_prime))
+        assert(abs(self.C_prime[0]-self.lV)<0.1)
+        assert(abs(self.C_prime[1]-0.0)<0.1)
+        assert(abs(self.C_prime[2]-0.0)<0.1)
+        # should now be (lV, 0, 0)
 
         # T is the tangential point of view vector to universe sphere
         # since our universe sphere has a radius of 1 and the reference point is (0,0,0),
@@ -228,7 +270,6 @@ class Camera(Miniverse):
         # 2021-03-21 ph NOTE that the smallest defines the FOV! So if the picture has
         #               aspect ratio of 4:3, then the Y-axis (in 2D) defines the FOV
         #               and the X-axis (2D) actually shows a broader FOV than set.
-        # TODO: still the sphere is kind of distorted!
         Uy3d = (0,1,0)
         Uy3d_prime = self.project_p(Uy3d)
         Uz3d = (0,0,1)
@@ -248,9 +289,6 @@ class Camera(Miniverse):
         OMz = self.vec_len(self.vec_sub(self.O_prime, self.C_prime))*(tan_theta+tan_theta_prime)-self.vec_len(self.vec_sub(Pz, self.O_prime))
         self.factor_y = 1/(OMz/OPz)
 
-        # 2021-03-21 ph NOTE that the smallest defines the FOV! So if the picture has
-        #               aspect ratio of 4:3, then the Y-axis (in 2D) defines the FOV
-        #               and the X-axis (2D) actually shows a broader FOV than set.
         if self.factor_x<self.factor_y:
             self.factor_y = self.factor_x
         else:
@@ -283,14 +321,17 @@ class Camera(Miniverse):
                 return True
         return False
 
+    # NOTE: the camera induced rotation/translation is done directly in project_p2d()
     def applyContext(self, context, *kwargs, **args):
         list = []
         size = context["size"]
         for p in kwargs:
             if size!=1.0:
                 p = self.stretch(p, size, size, size)
-            p = self.rotate(p, context["azimuth"], context["altitude"], context["roll"])
-            # displace so that the camera is at (0,0,0)
+            p = self.rotate(p, context["azimuth"])
+            p = self.rotate(p, 0.0, context["altitude"])
+            p = self.rotate(p, 0.0, 0.0, context["roll"])
+            # translate to place
             place = context["place"]
             p = self.vec_add(p, (place[0], place[1], place[2]))
             list.append(p)
@@ -345,8 +386,8 @@ class Camera(Miniverse):
                 cameraContext = {
                     "place" :   [0.0, 0.0, 0.0],
                     "size" :    1.0,    # size gets added???
-                    "azimuth" : -1*self.azimuth,
-                    "altitude": -1*self.altitude,
+                    "azimuth" : 180-self.view_azimuth,
+                    "altitude": -1*self.view_altitude,
                     "roll":     self.roll,
                 }
                 normalvector = self.applyContext(cameraContext, normalvector)[0]

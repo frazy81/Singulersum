@@ -73,11 +73,10 @@
 #       Polygons would need a zIndex calculus for each pixel.
 # TODO: Function() class should enable the use the sg.time, so that custom functions may
 #       change with time.
-# TODO: I still see distored objects (eg. Millenium Falcon). Something in Math still isn't
-#       correct. I actually could think that it may have to do with the rotation
-#       algorithm.
 # TODO: tiny_house.yaml: size=2.0 stuff get out of universe, but should not. Rescale into
 #       parent scale context wrong I assume. Need to check where and how I did that.
+# TODO: Naming convention: always use named parameters instead of something like
+#       point=(x,y,z). Easier for GUI (edit objects) and YAML
 
 # Main TODO:
 # - light (camera light) is still wrong (normal vector calculus depends on point order)

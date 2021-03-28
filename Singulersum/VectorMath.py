@@ -99,7 +99,36 @@ class VectorMath(Debug):
         return normalvector
 
     # rotate a 3D vector p by azimuth (0-360°), altitude (-90 to +90°), roll (-180° to +180°)
-    def rotate(self, p, azimuth=None, altitude=None, roll=None):
+    def rotate(self, p, azimuth=0.0, altitude=0.0, roll=0.0):
+        P_prime = p
+        if azimuth is None:
+            azimuth = 0.0
+        if altitude is None:
+            altitude = 0.0
+        if roll is None:
+            roll = 0.0
+        azimuth = azimuth/180*pi
+        altitude = altitude/180*pi
+        roll = roll/180*pi
+        M = (
+            (
+            cos(azimuth)*cos(altitude),
+            cos(azimuth)*sin(altitude)*sin(roll)-sin(azimuth)*cos(roll), cos(azimuth)*sin(altitude)*cos(roll)+sin(azimuth)*sin(roll)
+            ),
+            (
+            sin(azimuth)*cos(altitude), sin(azimuth)*sin(altitude)*sin(roll)+cos(azimuth)*cos(roll), sin(azimuth)*sin(altitude)*cos(roll)-cos(azimuth)*sin(roll)
+            ),
+            (
+            -1*sin(altitude),
+            cos(altitude)*sin(roll),
+            cos(altitude)*cos(roll)
+            )
+        )
+        P_prime = self.matrix_vector_product_3(M, P_prime)
+        return P_prime
+
+    # not used anymore
+    def rotateold(self, p, azimuth=None, altitude=None, roll=None):
         P_prime = p
         # rotate around Z-Axis (azimuth), yaw
         if azimuth is not None:

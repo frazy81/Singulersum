@@ -267,6 +267,7 @@ class SingulersumGUI(Tk):
 
         examplesmenu = Menu(menubar, tearoff=0)
         examplesmenu.add_command(label="singulersum", command=lambda: self.openYaml("../yaml/singulersum.yaml"))
+        examplesmenu.add_command(label="test", command=lambda: self.openYaml("../yaml/test.yaml"))
         examplesmenu.add_command(label="tiny house", command=lambda: self.openYaml("../yaml/tiny_house.yaml"))
         examplesmenu.add_command(label="lighttest", command=lambda: self.openYaml("../yaml/lighttest.yaml"))
         examplesmenu.add_command(label="cube", command=lambda: self.openYaml("../yaml/cube.yaml"))
