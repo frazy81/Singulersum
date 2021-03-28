@@ -584,11 +584,12 @@ class Polygon(BasicObject, VectorMath):
 class Function(Object):
 
     def __init__(self, parent, x="x", y="y", z="z", rel=None, amount=20, alpha=0, fill="white", stroke=None, *kwargs, **args):
-        super().__init__(parent, *kwargs, **args)
         self.amount=amount
         self.rel=rel
         self.alpha=alpha
-        self.color=color
+        self.fill = fill
+        self.stroke = stroke
+        super().__init__(parent, *kwargs, **args)
         if rel is None:
             # check for x in x
             if x.find("x")==-1:

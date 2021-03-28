@@ -3,6 +3,7 @@
 # 2021-03-24 ph line() -> vec_line(), so that line() is Miniverses line()
 # 2021-03-26 ph cross_product was wrong, resulting in wrong normalvector computation
 # 2021-03-27 ph plane -> plane_normalvec
+# 2021-03-28 ph point behind camera reports negative distance.
 
 """
     Singulersum.VectorMath()
@@ -66,6 +67,9 @@ class VectorMath(Debug):
         # this is the correct distance, the direction vector is C_prime->P and hence the
         # length! 2021-03-21 ph finally found that bug.
         dist = sqrt(line[3]**2+line[4]**2+line[5]**2)
+        if lambd<0.0:
+            # point is BEHIND the camera! Assign negative dist
+            dist = -1*dist
         return (line[0]+lambd*line[3], line[1]+lambd*line[4], line[2]+lambd*line[5], dist)
 
     def plane_normalvec(self, normal_vector, point_vector):

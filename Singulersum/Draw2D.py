@@ -7,6 +7,7 @@
 # 2021-03-15 ph Performance Boost with new array method!
 # 2021-03-27 ph alpha not part of color fix
 # 2021-03-27 ph polygon stroke optional
+# 2021-03-28 ph polygon wide out of range fix
 
 """
     class Singulersum.Draw2D()
@@ -313,7 +314,6 @@ class Draw2D(Debug):
         maxx=0
         miny=self.height
         maxy=0
-        # TODO: max them to (0 and self.width]
         for p in kwargs:
             if p[0]<minx:
                 minx=p[0]
@@ -323,6 +323,15 @@ class Draw2D(Debug):
                 miny=p[1]
             if p[1]>maxy:
                 maxy=p[1]
+        # polygon wide out of range fixes:
+        if minx<0:
+            minx=0
+        if maxx>self.width:
+            maxx=self.width
+        if miny<0:
+            miny=0
+        if maxy>self.height:
+            maxy=self.height
         for y in range(miny, maxy):
             # build node list
             nodes=0

@@ -12,6 +12,7 @@
 # 2021-03-27 ph sg.showBackside (was sg.showBackground)
 # 2021-03-27 ph plane -> plane_normalvec
 # 2021-03-28 ph rotation matrix fix
+# 2021-03-28 ph point behind camera fix (2D coordinates negate)
 
 """
     class Singulersum.Camera()
@@ -141,8 +142,17 @@ class Camera(Miniverse):
         #       the plane and MORE FAR away from Camera!
 
         # result
-        x_prime = int(self.factor_x * y * self.width/2 + self.width/2)
-        y_prime = int( -1* self.factor_y * z * self.height/2 + self.height/2)
+        x_prime = self.factor_x * y * self.width/2
+        y_prime = -1* self.factor_y * z * self.height/2
+        if distance<0.0:
+            # point is behind camera, which is negating x and y 2D orientation
+            x_prime *= -1
+            y_prime *= -1
+        x_prime += self.width/2
+        y_prime += self.height/2
+        x_prime = int(x_prime)
+        y_prime = int(y_prime)
+
         # NOTE: in 2D y-axis is getting more positive DOWN, where in 3D z-axis getting
         #       smaller, that's why -1*self.factor_y*z ...
 
@@ -498,6 +508,7 @@ class Camera(Miniverse):
         for poly in polys:
             npoints = []
             distance = 0.0
+            all_distances_negative = True
             # 2021-03-26 ph doing a "poly.distance=max(poly_points.distance)" causes
             # a lot of z-fighting, since for example edge points of a cube are shared
             # by cube sides and therefore they sometimes have equal maximal distances
@@ -506,8 +517,14 @@ class Camera(Miniverse):
             for p in poly["points"]:
                 p = self.project_p2d(p)
                 distance+=p[2]
+                if distance>=0.0:
+                    all_distances_negative=False
                 npoints.append(p)
             distance /= len(npoints)
+            if all_distances_negative is True:
+                poly["visibility"]=False
+            else:
+                poly["visibility"]=True
             poly["points"] = npoints
             poly["distance"] = distance
         self.debug("2nd step done", timeit=step2timeit)
@@ -529,6 +546,8 @@ class Camera(Miniverse):
         self.debug("3nd step - drawing")
         poly_timing = self.timeit()
         for poly in polys:
+            if poly["visibility"] is False:
+                continue
             # check z-Buffer of edge points, are they taken?
             # TODO: this is not enough! Can we do better?
             # this fast (and lossy) check can be deactivated by
