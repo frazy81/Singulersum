@@ -35,12 +35,9 @@ cam1:
 f1:
     type: function
     visibility: True
-    x: x
-    y: y
-    z: sin(x)+sin(y)
+    fx: x
+    fy: y
+    fz: sin(x)+sin(y)
     rel: z
     scale: [5.0, 5.0, 5.0]
     size: 1
-#p1:
-#    type: point
-#    point: [5.0, 5.0, 5.0]

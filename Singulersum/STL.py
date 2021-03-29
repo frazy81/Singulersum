@@ -5,7 +5,7 @@
 """
     class Singulersum.STL()
 
-    2021-03-11 ph Created by Philipp Hasenfratz
+    2021-03-11 Created by Philipp Hasenfratz
 
     STL() reads an STL file and returns the maximal x/y/z coordinates in the STL file as well as the poligon count. The __init__ method automatically detects wether the STL file to be loaded is textual or in binary format.
 

@@ -7,6 +7,7 @@ gui:
 sg:
     scale: [5.0, 5.0, 5.0]
     showBackside: True
+    showOnlyBoundingBox: False
 cs:
     type: coordinatesystem
 cam1:
@@ -37,3 +38,8 @@ lighttest2:
     ]
     place: [0.0, 0.0, 0.0]
     size: 0.4
+dot:
+    type: point
+    x: 0.0
+    y: 0.7
+    z: 0.1

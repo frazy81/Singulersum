@@ -276,6 +276,7 @@ class SingulersumGUI(Tk):
         examplesmenu.add_command(label="utah teapot", command=lambda: self.openYaml("../yaml/utah_teapot_stl.yaml"))
         examplesmenu.add_command(label="millennium falcon", command=lambda: self.openYaml("../yaml/millennium_falcon_stl.yaml"))
         examplesmenu.add_command(label="heart curve", command=lambda: self.openYaml("../yaml/heart_curve.yaml"))
+        examplesmenu.add_command(label="star trek", command=lambda: self.openYaml("../yaml/star_trek.yaml"))
         examplesmenu.add_command(label="sink", command=lambda: self.openYaml("../yaml/sink.yaml"))
 
         menubar.add_cascade(label="Examples", menu=examplesmenu)
@@ -468,7 +469,7 @@ class SingulersumGUI(Tk):
             self.debug("don't know how to handle this file type (must be .yaml or .stl)", file)
 
     def openFile(self):
-        dlg = filedialog.Open(self, filetypes=(("STL files", "*.stl"), ("YAML files", "*.yaml"), ("all files", "*.*")))
+        dlg = filedialog.Open(self, filetypes=(("YAML files", "*.yaml"), ("STL files", "*.stl"), ("all files", "*.*")))
         file = dlg.show()
         self.open(file)
 

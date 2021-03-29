@@ -31,6 +31,10 @@
 # 2021-03-27 ph stl maxX,maxY,maxZ -> scale fix. scale needs to be the absolute maximum
 # 2021-03-27 ph polygon color now fill=<color>, stroke=<color>
 # 2021-03-28 ph plane
+# 2021-03-28 ph Point->Dot rename
+# 2021-03-28 ph sg.showOnlyBoundingBox
+# 2021-03-29 ph update function in Miniverse
+# 2021-03-29 ph objects relatively positioned to their parent (x,y,z is place in parent)
 
 """
     class Singulersum.Singulersum()
@@ -80,19 +84,13 @@
 #       point=(x,y,z). Easier for GUI (edit objects) and YAML
 
 # Main TODO:
-# - light (camera light) is still wrong (normal vector calculus depends on point order)
-#       - this is why the sine_waves.yaml example has this "chessboard" kind of look.
-#         this is not happening on STL files, because there the normal vector for polygons
-#         is defined within the STL file and thus is not calculated by Singulersum.
-# - if normalvector of a poly is pointing in the view vector V direction, the poly must be
-#   "hidden", use green to show that a poly is viewed from the back side.
 # - z-Index problems, z-fighting
 # - ObjectBrowser implementation
 # - spheres, cubes, planes and other geometric forms
 # - I guess there are still lots of bugs in the Miniverse placing (recursively place,
 #   rotate, translate and resize other Miniverses (such as Function() or Sphere()) into
 #   Singulersum)
-# - Fast polyfill or my own approach: don't use polys at all, use a SurroundingPoly only.
+# - Fast polyfill or: don't use polys at all, use a SurroundingPoly only.
 # - Game and Mobile version of Singulversum
 # - .yaml files to configure Singulversi
 # - singulersum_video scenery.yaml -fps 30 scenery.mp4
@@ -133,7 +131,9 @@ class Miniverse(VectorMath, Debug):
         self.startTime = time.time()
         self.time      = 0.0
         self.scale     = (1.0, 1.0, 1.0)
-        self.place     = (0.0, 0.0, 0.0)        # where are we placed in the parent frame
+        self.x         = 0.0
+        self.y         = 0.0
+        self.z         = 0.0
         self.size      = 1.0
         self.azimuth   = 0.0
         self.altitude  = 0.0
@@ -143,6 +143,16 @@ class Miniverse(VectorMath, Debug):
         self.id        = ""
         self.name      = None
         self.visibility = True
+        self.updateFunction = None
+        if "x" in args:
+            self.x = args["x"]
+        if "y" in args:
+            self.y = args["y"]
+        if "z" in args:
+            self.z = args["z"]
+        if "update" in args:
+            self.debug("set update function")
+            self.setUpdate(args["update"])
         if "visibility" in args:
             self.visibility = args["visibility"]
         self.name = "AnonymousObject"
@@ -158,9 +168,6 @@ class Miniverse(VectorMath, Debug):
         while parent is not None and isinstance(parent, Singulersum) is False:
             parent = parent.parent
         self.top=parent
-
-    def setPlace(self, place):
-        self.place = place
 
     def reset(self):
         self.debug("Miniverse.reset(), delete all objects")
@@ -179,12 +186,12 @@ class Miniverse(VectorMath, Debug):
         self.objects[name]=obj
         return obj
 
-    def point(self, *kwargs, **args):
+    def dot(self, *kwargs, **args):
         self.object_count += 1
-        name = "point#"+str(self.object_count)
+        name = "dot#"+str(self.object_count)
         if "name" in args:
             name = args["name"]
-        obj = Point(self, *kwargs, **args)
+        obj = Dot(self, *kwargs, **args)
         self.objects[name]=obj
         return obj
 
@@ -240,6 +247,14 @@ class Miniverse(VectorMath, Debug):
         self.objects[name]=obj
         return obj
 
+    def point(self, name=None, *kwargs, **args):
+        self.object_count += 1
+        if name is None:
+            name = "point#"+str(self.object_count)
+        obj = Point(self, *kwargs, **args)
+        self.objects[name]=obj
+        return obj
+
     def object(self, name=None, *kwargs, **args):
         self.object_count += 1
         if name is None:
@@ -247,13 +262,6 @@ class Miniverse(VectorMath, Debug):
         obj = Object(self, *kwargs, **args)
         self.objects[name]=obj
         return obj
-
-    def update(self):
-        changed = False
-        for name, obj in self.objects.items():
-            if obj.update() is True:
-                changed = True
-        return changed
 
     # stringifier
     def __str__(self):
@@ -268,6 +276,8 @@ class Miniverse(VectorMath, Debug):
         anonymousObject = self.object(*kwargs, **args)
         stl = STL(self, file)
         (maxX, maxY, maxZ, polygon_count) = stl.read()
+        self.debug("importing polygons from stl")
+        importer = self.timeit()
         max = 0
         if maxX>max:
             max=maxX
@@ -282,6 +292,7 @@ class Miniverse(VectorMath, Debug):
             poly = polys[i]
             norm = norms[i]
             anonymousObject.polygon( *poly, normalvector=norm, stroke=None, fill=(255,255,255) )
+        self.debug("import completed.", timeit=importer)
         return anonymousObject
 
     def yaml(self, file=None, data=None, *kwargs, **args):
@@ -296,6 +307,52 @@ class Miniverse(VectorMath, Debug):
                 self.debug("in 'gui' namespace, calling the GUI callback. event=set, name=", name, "value=", value)
                 self.callback("set", name=name, value=value)
         return anonymousObject
+
+    def setPlace(self, x, y, z):
+        x0=self.x
+        y0=self.y
+        z0=self.z
+        self.x=x
+        self.y=y
+        self.z=z
+        if x0!=x or y0!=y or z0!=z:
+            return True
+        else:
+            return False
+
+    def setPlaceSpherical(self, azimuth, altitude, r):
+        x0=self.x
+        y0=self.y
+        z0=self.z
+        C = (r, 0, 0)
+        C = self.rotate(C, azimuth)
+        C = self.rotate(C, 0.0, -1*altitude)
+        (x, y, z) = C
+        if altitude>0:
+            # TODO: check
+            #assert(z>0)
+            pass
+        self.x = x
+        self.y = y
+        self.z = z
+        assert(self.x**2+self.y**2+self.z**2-r**2<1e-06)
+        Aazimuth = atan2(self.y, self.x)
+        if Aazimuth<0.0:
+            Aazimuth = 2*pi+azimuth
+        Aazimuth = Aazimuth/pi*180
+        Aradius = sqrt(self.x**2+self.y**2+self.z**2)
+        Aaltitude = atan2(self.z, sqrt(self.x**2+self.y**2))/pi*180
+        #print("azimuth:", azimuth, Aazimuth)
+        #print("altitude:", altitude, Aaltitude)
+        #print("radius:", r, Aradius)
+        # TODO: fails, need to check
+        #assert(abs(self.azimuth-Aazimuth)<0.1)
+        #assert(abs(self.altitude-Aaltitude)<0.1)
+        #assert(abs(self.radius-Aradius)<0.1)
+        if x0!=x or y0!=y or z0!=z:
+            return True
+        else:
+            return False
 
     # animate the Miniverse
     def animation(self, **args):
@@ -385,6 +442,20 @@ class Miniverse(VectorMath, Debug):
         else:
             return True
 
+    def setUpdate(self, func):
+        self.updateFunction = func
+
+    def update(self):
+        changed = False
+        self.debug("Miniverse().update() for "+str(self))
+        if self.updateFunction is not None:
+            self.debug("updateFunction for "+str(self)+" not None. Calling the function.")
+            if self.updateFunction(self):
+                changed = True
+        for name, obj in self.objects.items():
+            if obj.update() is True:
+                changed = True
+        return changed
 
 class Singulersum(Miniverse):
 
@@ -415,6 +486,7 @@ class Singulersum(Miniverse):
         self.showCoordinateSystem   = True
         self.showCenterOfView       = True
         self.showBackside           = True       # highlight polygons if viewed from back
+        self.showOnlyBoundingBox    = False      # for quick GUI animation, only BB'es
         self.useFastHiddenPolyCheck = False      # this is lossy!
         self.polyOnlyGrid           = False      # show only lines of polynoms
         self.polyOnlyPoint          = False      # show only point clouds
@@ -463,6 +535,7 @@ class Singulersum(Miniverse):
 
     def update(self):
         changed = False
+        self.debug("Singulersum().update() is updating the Singulersum")
         for name, obj in self.objects.items():
             if obj.update() is True:
                 changed = True
@@ -475,6 +548,7 @@ class Singulersum(Miniverse):
                 changed = True
         self.timeAdvance()
         if changed is False:
+            self.debug("nothing has changed in the Singulersum: callback animation_stop")
             self.callback("animation_stop", object=self)
         return changed
 
@@ -517,15 +591,23 @@ class BasicObject(Debug):
 
 class Object(Miniverse):
 
-    def __init__(self, parent, *kwargs, **args):
+    """
+        Object().__init__(x, y, z)
+
+        x, y, z is where the object will be placed into the parent context
+    """
+    def __init__(self, parent, x=0.0, y=0.0, z=0.0, *kwargs, **args):
         super().__init__(parent, *kwargs, **args)
+        self.x = x
+        self.y = y
+        self.z = z
 
 # some basic drawers
 
 class Line(BasicObject):
 
     def __init__(self, parent, x1, y1, z1, x2, y2, z2, *kwargs, **args):
-        super().__init__(parent)
+        super().__init__(parent, x=0.0, y=0.0, z=0.0)
         scale = self.parent.scale
         if "color" in args:
             self.color = args["color"]
@@ -542,7 +624,7 @@ class Line(BasicObject):
         self.y2=y2/scale[1]
         self.z2=z2/scale[2]
 
-class Point(BasicObject):
+class Dot(BasicObject):
 
     # singulersum_gui.py requires explicit parameters x, y, z. Easier this way.
     def __init__(self, parent, x=0.0, y=0.0, z=0.0, *kwargs, **args):
@@ -583,7 +665,7 @@ class Polygon(BasicObject, VectorMath):
 
 class Function(Object):
 
-    def __init__(self, parent, x="x", y="y", z="z", rel=None, amount=20, alpha=0, fill="white", stroke=None, *kwargs, **args):
+    def __init__(self, parent, fx="x", fy="y", fz="z", rel=None, amount=20, alpha=0, fill="white", stroke=None, *kwargs, **args):
         self.amount=amount
         self.rel=rel
         self.alpha=alpha
@@ -592,11 +674,11 @@ class Function(Object):
         super().__init__(parent, *kwargs, **args)
         if rel is None:
             # check for x in x
-            if x.find("x")==-1:
+            if fx.find("x")==-1:
                 rel=0
-            elif y.find("y")==-1:
+            elif fy.find("y")==-1:
                 rel=1
-            elif z.find("z")==-1:
+            elif fz.find("z")==-1:
                 rel=2
             else:
                 print("Function(): either x, y or z must depend on the others!")
@@ -613,9 +695,9 @@ class Function(Object):
                 print("unsupported Function.rel=", rel, "must be x,y or z")
                 exit(0)
             self.rel=rel
-        self.x=x
-        self.y=y
-        self.z=z
+        self.fx=fx
+        self.fy=fy
+        self.fz=fz
         self.createPolygons()
 
     def update(self):
@@ -663,9 +745,9 @@ class Function(Object):
         self.debug("polygon count for this function: ", cnt)
 
     def eval(self, x, y, z):
-        nx=eval(self.x, globals(), {"x":x, "y":y, "z":z} )
-        ny=eval(self.y, globals(), {"x":x, "y":y, "z":z} )
-        nz=eval(self.z, globals(), {"x":x, "y":y, "z":z} )
+        nx=eval(self.fx, globals(), {"x":x, "y":y, "z":z} )
+        ny=eval(self.fy, globals(), {"x":x, "y":y, "z":z} )
+        nz=eval(self.fz, globals(), {"x":x, "y":y, "z":z} )
         return (nx,ny,nz)
 
 class Sphere(Object):
@@ -674,7 +756,7 @@ class Sphere(Object):
         self.alpha = alpha
         self.fill = [255, 255, 255]
         self.stroke = [255, 255, 255]
-        super().__init__(parent, *kwargs, **args)
+        super().__init__(parent, x=x, y=y, z=z, *kwargs, **args)
         self.amount=amount
         self.x = x
         self.y = y
@@ -698,9 +780,9 @@ class Sphere(Object):
                 #               be calculated.
                 theta = (the/(self.amount-1))*2*pi+1e-05
                 alpha = (alp/(self.amount-1))*pi+1e-05
-                x = self.x + self.r*cos(theta)*sin(alpha)
-                y = self.y + self.r*sin(theta)*sin(alpha)
-                z = self.z + self.r*cos(alpha)
+                x = self.r*cos(theta)*sin(alpha)
+                y = self.r*sin(theta)*sin(alpha)
+                z = self.r*cos(alpha)
                 corps[the][alp] = (x,y,z)
         # make polis
         cnt=0
@@ -735,15 +817,15 @@ class Cube(Object):
         r = self.r
 
         # front
-        p0 = (x+r, y-r, z+r)
-        p1 = (x+r, y+r, z+r)
-        p2 = (x+r, y+r, z-r)
-        p3 = (x+r, y-r, z-r)
+        p0 = (r, 0-r, r)
+        p1 = (r, r, r)
+        p2 = (r, r, 0-r)
+        p3 = (r, 0-r, 0-r)
         # back
-        p4 = (x-r, y-r, z+r)
-        p5 = (x-r, y+r, z+r)
-        p6 = (x-r, y+r, z-r)
-        p7 = (x-r, y-r, z-r)
+        p4 = (0-r, 0-r, r)
+        p5 = (0-r, r, r)
+        p6 = (0-r, r, 0-r)
+        p7 = (0-r, 0-r, 0-r)
 
         # front
         self.polygon( p3, p1, p0, name="front1", fill="white", alpha=self.alpha )
@@ -801,7 +883,7 @@ class Plane(Object):
         s = [self.v2x, self.v2y, self.v2z]
         for i in range(0,amount):
             for j in range(0, amount):
-                p = (self.x, self.y, self.z)
+                p = (0.0, 0.0, 0.0)
                 p = self.vec_add(p, self.vec_mul_scalar(v, i/amount) )
                 p = self.vec_add(p, self.vec_mul_scalar(s, j/amount) )
                 corps[i][j] = p
@@ -816,6 +898,22 @@ class Plane(Object):
                 pass
 
         self.debug("polygon count for this plane: ", cnt)
+
+class Point(Object):
+
+    def __init__(self, parent, x=0.0, y=0.0, z=0.0, alpha=0, fill="white", stroke=None, *kwargs, **args):
+        self.alpha = alpha
+        self.fill = fill
+        self.stroke = stroke
+
+        super().__init__(parent, *kwargs, **args)
+
+        self.x = x
+        self.y = y
+        self.z = z
+
+        self.sphere(0.0, 0.0, 0.0, r=self.scale[0]/200, fill=fill, stroke=None, amount=10)
+        pass
 
 class CoordinateSystem(BasicObject):
 
@@ -838,7 +936,7 @@ class CoordinateSystem(BasicObject):
                         nx=(float(i)/points*2.0-1.0)*scale[0]
                         ny=(float(j)/points*2.0-1.0)*scale[1]
                         nz=(float(k)/points*2.0-1.0)*scale[2]
-                        self.parent.point( nx,ny,nz, color="red" )
+                        self.parent.dot( nx,ny,nz, color="red" )
 
 
     def update(self):

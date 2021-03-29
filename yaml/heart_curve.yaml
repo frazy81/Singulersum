@@ -36,8 +36,8 @@ cam1:
     update: animator_rotate
 f1:
     type: function
-    x: x
-    y: y
-    z: sin(15*sqrt(x**2-1.2*abs(x)*y+y**2)**0.2)**2*sqrt(x**2-1.2*abs(x)*y+y**2)**0.3
+    fx: x
+    fy: y
+    fz: sin(15*sqrt(x**2-1.2*abs(x)*y+y**2)**0.2)**2*sqrt(x**2-1.2*abs(x)*y+y**2)**0.3
     amount: 60
     rel: z

@@ -10,7 +10,6 @@
     NOTE: callback event's are fired from Singulersum.py (when sg.yaml() is called)
 """
 
-# TODO: still all in Singulersum instead of object(Miniverse)!
 # TODO: bad coding. yaml object must be defined in specific order. Eg. animation must
 #       preceed the camera, otherwise the update function is not known when camera is
 #       processed.
@@ -71,30 +70,29 @@ class SingulersumYaml(Debug):
         assert("type" in namespace)
         objtype = namespace["type"]
         namespace.pop("type", None)    # delete the type
+        update = namespace.pop("update", None)
+        if update is not None:
+            # update for all Miniverse objects (including Camera)
+            namespace["update"]=self.namespace[update]
 
-        if objtype=="function":
-            obj=parent.function(**namespace)
-
-        elif objtype=="point":
+        if objtype=="dot":
             point = namespace.pop("point", None)
-            if point is None:
-                self.debug("point needs a variable 'point'!")
-                exit(0)
+            if point is not None:
+                namespace["x"] = point[0]
+                namespace["y"] = point[1]
+                namespace["z"] = point[2]
             obj = parent.object(**namespace)
-            obj=obj.point( (point[0], point[1], point[2]), **namespace)
+            obj=obj.dot( **namespace)
 
         elif objtype=="camera":
             position = namespace.pop("position", None)
             lookat = namespace.pop("lookat", None)
-            update = namespace.pop("update", None)
             if position is None:
                 self.debug("camera needs a 'position'")
                 exit(0)
             if lookat is None:
                 self.debug("camera needs a 'lookat'")
                 exit(0)
-            if update is not None:
-                namespace["update"]=self.namespace[update]
             obj=parent.camera(position[0], position[1], position[2], lookat[0], lookat[1], lookat[2], **namespace)
             pass
 
@@ -143,11 +141,20 @@ class SingulersumYaml(Debug):
                     pl=points[i]
                 obj.line(*points[-1], *pl)
 
+        elif objtype=="function":
+            obj=parent.function(**namespace)
+
+        elif objtype=="object":
+            obj=parent.object(**namespace)
+
         elif objtype=="cube":
             obj = parent.cube(**namespace)
 
         elif objtype=="sphere":
             obj = parent.sphere(**namespace)
+
+        elif objtype=="point":
+            obj = parent.point(**namespace)
 
         elif objtype=="plane":
             print(namespace)

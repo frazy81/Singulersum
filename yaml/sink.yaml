@@ -35,9 +35,9 @@ cam1:
     update: animator_rotate
 f1:
     type: function
-    x: x
-    y: y
-    z: sqrt(x*x+y*y)+3*cos(sqrt(x*x+y*y))+0
+    fx: x
+    fy: y
+    fz: sqrt(x*x+y*y)+3*cos(sqrt(x*x+y*y))+0
     amount: 60
     rel: z
     scale: [10.0, 10.0, 10.0]

@@ -29,4 +29,3 @@ stl:
     visibility: True
     file: ../stl/Sphericon-ascii.stl
     place: [0.0, 0.0, 0]
-default: cam

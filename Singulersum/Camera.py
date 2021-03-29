@@ -13,6 +13,9 @@
 # 2021-03-27 ph plane -> plane_normalvec
 # 2021-03-28 ph rotation matrix fix
 # 2021-03-28 ph point behind camera fix (2D coordinates negate)
+# 2021-03-29 ph showOnlyBoundingBox added
+# 2021-03-29 ph objects relatively positioned to their parent (x,y,z is place in parent),
+#               first works
 
 """
     class Singulersum.Camera()
@@ -40,7 +43,6 @@ class Camera(Miniverse):
         self.azimuth=None
         self.altitude=None
         self.roll=None
-        self.updateFunction=None
         self.r=None
         self.x0=x0
         self.y0=y0
@@ -64,64 +66,7 @@ class Camera(Miniverse):
         self.debug("  pos/lookat", x, y, z, x0, y0, z0)
         self.debug("  fov", fov)
         self.debug("  width/height", width, height)
-        if "update" in args:
-            self.setUpdate(args["update"])
         self.setupCamera()
-
-    def setPlace(self, x, y, z):
-        x0=self.x
-        y0=self.y
-        z0=self.z
-        self.x=x
-        self.y=y
-        self.z=z
-        if x0!=x or y0!=y or z0!=z:
-            return True
-        else:
-            return False
-
-    def setPlaceSpherical(self, azimuth, altitude, r):
-        x0=self.x
-        y0=self.y
-        z0=self.z
-        C = (r, 0, 0)
-        C = self.rotate(C, azimuth)
-        C = self.rotate(C, 0.0, -1*altitude)
-        (x, y, z) = C
-        if altitude>0:
-            # TODO: check
-            #assert(z>0)
-            pass
-        self.x = x
-        self.y = y
-        self.z = z
-        assert(self.x**2+self.y**2+self.z**2-r**2<1e-06)
-        Aazimuth = atan2(self.y, self.x)
-        if Aazimuth<0.0:
-            Aazimuth = 2*pi+azimuth
-        Aazimuth = Aazimuth/pi*180
-        Aradius = sqrt(self.x**2+self.y**2+self.z**2)
-        Aaltitude = atan2(self.z, sqrt(self.x**2+self.y**2))/pi*180
-        #print("azimuth:", azimuth, Aazimuth)
-        #print("altitude:", altitude, Aaltitude)
-        #print("radius:", r, Aradius)
-        # TODO: fails, need to check
-        #assert(abs(self.azimuth-Aazimuth)<0.1)
-        #assert(abs(self.altitude-Aaltitude)<0.1)
-        #assert(abs(self.radius-Aradius)<0.1)
-        if x0!=x or y0!=y or z0!=z:
-            return True
-        else:
-            return False
-
-    def setUpdate(self, func):
-        self.updateFunction = func
-
-    def update(self):
-        if self.updateFunction is not None:
-            self.debug("updateFunction for "+str(self)+" not None. Calling the function.")
-            return self.updateFunction(self)
-        return False
 
     def project_p2d(self, p):
         # rotate the point according to the azimuth and altitude of camera
@@ -156,7 +101,8 @@ class Camera(Miniverse):
         # NOTE: in 2D y-axis is getting more positive DOWN, where in 3D z-axis getting
         #       smaller, that's why -1*self.factor_y*z ...
 
-        return (x_prime, y_prime, distance)
+        # return list, so that items can be accessed and changed
+        return [x_prime, y_prime, distance]
 
     # each time the camera data is changed (shifted in space, other focal point, other
     # FOV setting etc.) setupCamera() MUST be called to update the new projection plane e.
@@ -319,13 +265,12 @@ class Camera(Miniverse):
         if "roll" in context:
             if context["roll"]!=0.0:
                 return True
-        if "place" in context:
-            if context["place"][0]!=0.0:
-                return True
-            if context["place"][1]!=0.0:
-                return True
-            if context["place"][2]!=0.0:
-                return True
+        if "x" in context and context["x"]!=0.0:
+            return True
+        if "y" in context and context["y"]!=0.0:
+            return True
+        if "z" in context and context["z"]!=0.0:
+            return True
         if "size" in context:
             if context["size"]!=1.0:
                 return True
@@ -342,10 +287,46 @@ class Camera(Miniverse):
             p = self.rotate(p, 0.0, context["altitude"])
             p = self.rotate(p, 0.0, 0.0, context["roll"])
             # translate to place
-            place = context["place"]
-            p = self.vec_add(p, (place[0], place[1], place[2]))
+            p = self.vec_add(p, (context["x"], context["y"], context["z"]))
             list.append(p)
         return list
+
+    def boundingBoxShow(self, versum, context):
+        self.debug("showBoundingBox")
+        bb_lines = []
+
+        r = versum.size
+        x = versum.x
+        y = versum.y
+        z = versum.z
+
+        # front
+        p0 = (r, 0-r, r)
+        p1 = (r, r, r)
+        p2 = (r, r, 0-r)
+        p3 = (r, 0-r, 0-r)
+        # back
+        p4 = (0-r, 0-r, r)
+        p5 = (0-r, r, r)
+        p6 = (0-r, r, 0-r)
+        p7 = (0-r, 0-r, 0-r)
+
+        line_points = [
+            [p0, p1, p2, p3],
+            [p0, p1, p5, p4],
+            [p1, p2, p6, p5],
+            [p0, p3, p7, p4],
+            [p3, p2, p6, p7],
+            [p4, p5, p6, p7],
+        ]
+        for lines in line_points:
+            lines = self.applyContext(context, *lines)
+            bb_lines.append( [ lines[0], lines[1], "white", 0 ] )
+            bb_lines.append( [ lines[1], lines[2], "white", 0 ] )
+            bb_lines.append( [ lines[2], lines[3], "white", 0 ] )
+            bb_lines.append( [ lines[3], lines[0], "white", 0 ] )
+
+        return bb_lines
 
     def object_iterator(self, versum):
         # we first calculate all polygons and process them later using different
@@ -355,19 +336,29 @@ class Camera(Miniverse):
         self.debug("object_iterator for "+str(versum))
         polys = []
         lines = []  # [ (p1, p2, color), ... ]
-        points= []  # [ (p1, color), ...]
+        dots  = []  # [ (p1, color), ...]
         context = {
-            "place" :   versum.place,
-            "size" :    versum.size,    # size gets added???
+            "x"       : versum.x,
+            "y"       : versum.y,
+            "z"       : versum.z,
+            "size"    : versum.size,
             "azimuth" : versum.azimuth,
             "altitude": versum.altitude,
-            "roll":     versum.roll,
+            "roll"    : versum.roll,
         }
         isSpecialContext = self.isSpecialContext(context)
+
         for name, obj in versum.objects.items():
             # use K-means and implement multi core processing?
+
             if obj.visibility is False:
                 continue
+
+            if self.parent.showOnlyBoundingBox is True:
+                if isinstance(obj, Line) or isinstance(obj, Dot) or isinstance(obj, Polygon) or isinstance(obj, CoordinateSystem):
+                    continue
+                lines.extend(self.boundingBoxShow(obj, context))
+
             # BasicObjects
             if isinstance(obj, Line):
                 p1 = (obj.x1, obj.y1, obj.z1)
@@ -375,11 +366,11 @@ class Camera(Miniverse):
                 if isSpecialContext:
                     (p1, p2) = self.applyContext(context, p1, p2)
                 lines.append( [p1, p2, obj.color, obj.thickness] )
-            elif isinstance(obj, Point):
+            elif isinstance(obj, Dot):
                 p = (obj.x, obj.y, obj.z)
                 if isSpecialContext:
                     p = self.applyContext(context, p)[0]
-                points.append( [p, obj.color] )
+                dots.append( [p, obj.color] )
             elif isinstance(obj, Polygon):
                 poly = []
                 normalvector = None
@@ -394,11 +385,13 @@ class Camera(Miniverse):
                     normalvector = self.applyContext(context, normalvector)[0]
                 #self.debug("polygon normal vector before cam", normalvector)
                 cameraContext = {
-                    "place" :   [0.0, 0.0, 0.0],
-                    "size" :    1.0,    # size gets added???
-                    "azimuth" : 180-self.view_azimuth,
-                    "altitude": -1*self.view_altitude,
-                    "roll":     self.roll,
+                    "x":          0.0,
+                    "y":          0.0,
+                    "z":          0.0,
+                    "size":       1.0,
+                    "azimuth":    180-self.view_azimuth,
+                    "altitude":   -1*self.view_altitude,
+                    "roll":       self.roll,
                 }
                 normalvector = self.applyContext(cameraContext, normalvector)[0]
                 if normalvector[0]==0 and normalvector[1]==0 and normalvector[2]==0:
@@ -427,15 +420,14 @@ class Camera(Miniverse):
             elif isinstance(obj, CoordinateSystem):
                 # ignore it! It added Lines to the parent context
                 pass
+
             elif issubclass(type(obj), Object):
-                place = context["place"]
-                nplace = (place[0]+obj.place[0], place[1]+obj.place[1], place[2]+obj.place[2])
-                (npoints, nlines, npolys) = self.object_iterator(obj)
-                for p in npoints:
-                    (pt, color) = p
+                (ndots, nlines, npolys) = self.object_iterator(obj)
+                for d in ndots:
+                    (dot, color) = d
                     if isSpecialContext:
-                        pt = self.applyContext(context, pt)[0]
-                    points.append( [pt, color] )
+                        dot = self.applyContext(context, dot)[0]
+                    dots.append( [dot, color] )
                 for l in nlines:
                     (p1, p2, color, thickness) = l
                     if isSpecialContext:
@@ -448,6 +440,7 @@ class Camera(Miniverse):
                     ppoints = p["points"]   # points reserved for points not polys!
                     normalvector = p["normalvector"]
                     if isSpecialContext:
+                        # TODO: no stretch, no translate, just rotate
                         normalvector = self.applyContext(context, normalvector)[0]
                     colorize = p["colorize"]
                     npoints = []
@@ -459,9 +452,10 @@ class Camera(Miniverse):
                     polys.append( poly )
                 pass
             else:
-                print("unknown object type", type(obj))
+                print("object type not known!")
                 exit(0)
-        return (points, lines, polys)
+
+        return (dots, lines, polys)
 
     def image(self):
         time = self.parent.time
@@ -481,27 +475,19 @@ class Camera(Miniverse):
         poly_hidden = 0
         poly_drawn  = 0
 
-        self.debug("1st step: iterating over ALL objects (polygons, lines, points, ...)")
+        self.debug("1st step: iterating over ALL objects (polygons, lines, dots, ...)")
         iteration_timing = self.timeit()
 
-        context = {
-            "place" :   self.parent.place,
-            "azimuth" : self.parent.azimuth,
-            "altitude": self.parent.altitude,
-            "roll":     self.parent.roll,
-            "size":     self.parent.size,
-        }
-
-        (points, lines, polys) = self.object_iterator(self.parent)
+        (dots, lines, polys) = self.object_iterator(self.parent)
         poly_total = len(polys)
 
         self.debug("iteration is complete.", timeit=iteration_timing)
 
-        # calculate projections of all points, lines, polys
-        self.debug("2nd step: calculate projected points, lines, polys")
+        # calculate projections of all dots, lines, polys
+        self.debug("2nd step: calculate projected dots, lines, polys")
         step2timeit = self.timeit()
-        for i in range(len(points)):
-            points[i][0] = self.project_p2d(points[i][0])
+        for i in range(len(dots)):
+            dots[i][0] = self.project_p2d(dots[i][0])
         for i in range(len(lines)):
             lines[i][0] = self.project_p2d(lines[i][0])
             lines[i][1] = self.project_p2d(lines[i][1])
@@ -564,15 +550,16 @@ class Camera(Miniverse):
             if self.parent.useFastHiddenPolyCheck is False:
                 hidden=False
             if hidden is False:
-                fill = (255,255,255)
-                stroke=(255,255,255)
+                fill = None
+                stroke=None
                 if poly["fill"] is not None:
                     fill = self.draw2d.getColor(poly["fill"])
                 if poly["stroke"] is not None:
                     stroke = self.draw2d.getColor(poly["stroke"])
                 alpha = poly["alpha"]
                 if poly["colorize"]>0:
-                    fill = (int(poly["colorize"]*fill[0]), int(poly["colorize"]*fill[1]), int(poly["colorize"]*fill[2]))
+                    if fill is not None:
+                        fill = (int(poly["colorize"]*fill[0]), int(poly["colorize"]*fill[1]), int(poly["colorize"]*fill[2]))
                 else:
                     fill = (0,255,0)
                 poly_drawn+=1
@@ -583,8 +570,6 @@ class Camera(Miniverse):
                 if self.parent.polyOnlyGrid is True:
                     fill = None
                     stroke = (255, 255, 255)
-                if self.parent.polyGrid is False and self.parent.polyOnlyGrid is False:
-                    stroke = None
                 if self.parent.polyOnlyPoint is False:
                     if alpha>0:
                         # object is partly transparent, disregard distance!
@@ -593,7 +578,7 @@ class Camera(Miniverse):
                 else:
                     # only one point per polygon. Small performance upgrade and good
                     # enough in most cases.
-                    self.draw2d.point(poly["points"][0][0], poly["points"][0][1], color=stroke, alpha=alpha)
+                    self.draw2d.point(poly["points"][0][0], poly["points"][0][1], color=fill, alpha=alpha)
             else:
                 poly_hidden+=1
         self.draw2d.polygon_end()
@@ -604,11 +589,11 @@ class Camera(Miniverse):
             others_count+=1
             self.draw2d.line( line[0][0], line[0][1], line[1][0], line[1][1], color=line[2], thickness=line[3] )
 
-        for point in points:
+        for dot in dots:
             others_count+=1
-            self.draw2d.point( point[0][0], point[0][1], color=point[1] )
+            self.draw2d.point( dot[0][0], dot[0][1], color=dot[1] )
 
-        self.debug("lines/points drawing complete.")
+        self.debug("lines/dots drawing complete.")
 
         self.debug("polygons total (calculated):", poly_total)
         self.debug("polygons hidden (not drawn):", poly_hidden, " [see sg.useFastHiddenPolyCheck]")

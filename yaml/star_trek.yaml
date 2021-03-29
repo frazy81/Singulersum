@@ -1,11 +1,12 @@
 # 2021-03-27 ph Created
 
 gui:
-    animated: False
+    animated: True
     camera: moon
 sg:
-    scale: [1000.0, 1000.0, 1000.0]
-    showBackside: False           # rename to showBacksides
+    scale: [100.0, 100.0, 100.0]
+    showBackside: False
+    showOnlyBoundingBox: True
 animator_rotate:
     # see Singulersum.py, "def animation()" for details on how to configure
     type: animation
@@ -21,6 +22,7 @@ moon:
     #update: animator_rotate
 universe_sphere:
     type: sphere
+    visibility: True
     x: 0.0
     y: 0.0
     z: 0.0
@@ -30,8 +32,16 @@ universe_sphere:
     size: 30.0
     fill: [0, 0, 255]
     stroke: [0, 0, 0]
+ship_animate:
+    type: animation
+    start: 0.0
+    end: 5.0
+    x: -1*time/5.0
 enterprise:
-    type: stl
-    file: ../stl/Star_Trek_NCC1701D_full.stl
-    place: [45.0, 0.0, 0.0]
+    type: object        # stl
+    #file: ../stl/Star_Trek_NCC1701D_full.stl
+    x: 0.0
+    y: 45.0
+    z: 0.0
     size: 1.0
+    update: ship_animate

@@ -4,6 +4,7 @@
 # 2021-03-26 ph cross_product was wrong, resulting in wrong normalvector computation
 # 2021-03-27 ph plane -> plane_normalvec
 # 2021-03-28 ph point behind camera reports negative distance.
+# 2021-03-29 ph tuple -> list returns, so that items can be accessed/modified directly.
 
 """
     Singulersum.VectorMath()
@@ -19,17 +20,17 @@ from math import *
 class VectorMath(Debug):
 
     def __init__(self):
-        self.vec_sub = lambda v1,v2: (v1[0]-v2[0], v1[1]-v2[1], v1[2]-v2[2])
-        self.vec_add = lambda v1,v2: (v1[0]+v2[0], v1[1]+v2[1], v1[2]+v2[2])
+        self.vec_sub = lambda v1,v2: [v1[0]-v2[0], v1[1]-v2[1], v1[2]-v2[2]]
+        self.vec_add = lambda v1,v2: [v1[0]+v2[0], v1[1]+v2[1], v1[2]+v2[2]]
         self.vec_len = lambda vector: sqrt(vector[0]**2+vector[1]**2+vector[2]**2)
-        self.vec_mul_scalar = lambda vector, factor: (vector[0]*factor, vector[1]*factor,vector[2]*factor)
-        self.dot_product = lambda v1,v2: (v1[0]*v2[0]+v1[1]*v2[1]+v1[2]*v2[2])
-        self.cross_product = lambda v, t: ( v[1]*t[2]-v[2]*t[1], v[2]*t[0]-v[0]*t[2], v[0]*t[1]-v[1]*t[0] )
-        self.matrix_vector_product_2 = lambda M, v: (M[0][0]*v[0]+M[0][1]*v[1], M[1][0]*v[0]+M[1][1]*v[1])
-        self.matrix_vector_product_3 = lambda M, v: (M[0][0]*v[0]+M[0][1]*v[1]+M[0][2]*v[2], M[1][0]*v[0]+M[1][1]*v[1]+M[1][2]*v[2], M[2][0]*v[0]+M[2][1]*v[1]+M[2][2]*v[2])
+        self.vec_mul_scalar = lambda vector, factor: [vector[0]*factor, vector[1]*factor,vector[2]*factor]
+        self.dot_product = lambda v1,v2: v1[0]*v2[0]+v1[1]*v2[1]+v1[2]*v2[2]
+        self.cross_product = lambda v, t: [ v[1]*t[2]-v[2]*t[1], v[2]*t[0]-v[0]*t[2], v[0]*t[1]-v[1]*t[0] ]
+        self.matrix_vector_product_2 = lambda M, v: [M[0][0]*v[0]+M[0][1]*v[1], M[1][0]*v[0]+M[1][1]*v[1]]
+        self.matrix_vector_product_3 = lambda M, v: [ M[0][0]*v[0]+M[0][1]*v[1]+M[0][2]*v[2], M[1][0]*v[0]+M[1][1]*v[1]+M[1][2]*v[2], M[2][0]*v[0]+M[2][1]*v[1]+M[2][2]*v[2] ]
         # line(point_vector(list:x,y,z)), direction_vector(list:x,y,z))):
-        self.vec_line = lambda point_vec, vector: (point_vec[0], point_vec[1], point_vec[2], vector[0], vector[1], vector[2])
-        self.line_calc = lambda line, lambd: (line[0]+lambd*line[3], line[1]+lambd[4], line[2]+lambd[5])
+        self.vec_line = lambda point_vec, vector: [point_vec[0], point_vec[1], point_vec[2], vector[0], vector[1], vector[2]]
+        self.line_calc = lambda line, lambd: [ line[0]+lambd*line[3], line[1]+lambd[4], line[2]+lambd[5] ]
         self.project_p = lambda point_vec: self.line_plane_intersection(self.vec_line(self.C_prime, self.vec_sub(point_vec, self.C_prime)), self.e)
 
     def vec_show(self, v):
@@ -70,7 +71,7 @@ class VectorMath(Debug):
         if lambd<0.0:
             # point is BEHIND the camera! Assign negative dist
             dist = -1*dist
-        return (line[0]+lambd*line[3], line[1]+lambd*line[4], line[2]+lambd*line[5], dist)
+        return [ line[0]+lambd*line[3], line[1]+lambd*line[4], line[2]+lambd*line[5], dist ]
 
     def plane_normalvec(self, normal_vector, point_vector):
         # plane_normalvec(normal_vector(list:(x,y,z)), point_on_plane(list:(x,y,z))):
@@ -82,24 +83,26 @@ class VectorMath(Debug):
         const = normal_vector[0]*-1*point_vector[0]
         const += normal_vector[1]*-1*point_vector[1]
         const += normal_vector[2]*-1*point_vector[2]
-        return (x,y,z,const, point_vector[0], point_vector[1], point_vector[2])
+        return [ x,y,z,const, point_vector[0], point_vector[1], point_vector[2] ]
 
     def poly_normalvector(self, p0, p1, p2):
         # calculate the normalvector to this polygon
         v  = self.vec_sub(p1,p0)    # p0->p1 (p01)
         t  = self.vec_sub(p2,p0)    # p0->p2 (p02)
         # normalvector is the crossproduct of these two
-        # TODO: check for collinearity first! if yes: choose other points if given
         normalvector = self.cross_product(v,t)
         normallength = self.vec_len(normalvector)
         if normallength>0.0:
             normalvector = self.vec_mul_scalar(normalvector, 1/normallength)
         else:
-            # TODO: fix me, collinearity
-            print("points:", p0, p1, p2)
-            print("normalvector:", normalvector)
-            print("normalvector 0!")
-            raise ValueError
+            # collinearity fix
+            self.debug("poly_normalvector(): points", p0, p1, p2)
+            self.debug("poly_normalvector(): normalvector:", normalvector)
+            self.debug("poly_normalvector(): normalvector 0!")
+            self.debug("poly_normalvector(): points might be collinear, faking normal vector")
+            p1 = [ p1[0]+1e-05, p1[1]+1e-05, p1[2]+1e-05]
+            p2 = [ p2[0]+1e-05, p1[2]+1e-05, p1[2]+1e-05]
+            return self.poly_normalvector(p0, p1, p2)
         return normalvector
 
     # rotate a 3D vector p by azimuth (0-360°), altitude (-90 to +90°), roll (-180° to +180°)
