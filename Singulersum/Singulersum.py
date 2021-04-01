@@ -38,6 +38,7 @@
 # 2021-04-01 ph Miniverse time fix (Miniverse time relative to Singulersum time)
 # 2021-04-01 ph Camera now part of Miniverse instead of Singulersum
 # 2021-04-01 ph Function class: time as variable so that func. may depend on time
+# 2021-04-01 ph faster polygon_fill (using points()) in Draw2D
 
 """
     class Singulersum.Singulersum()
@@ -70,44 +71,34 @@
      - PIL (Pillow)
 """
 
-# TODO: poly_fill: max to (0,self.width] and same for height to reduce payload
-#       the drawing sometimes takes extremely long, I think this is because some polygons
-#       go far out the view port and polygon_fill tries to fill all the invisible pixels,
-#       too.
 # TODO: zIndex of polygons. What's the zIndex of a line (currently unimplemented).
 #       Problem here is that currently all polygon pixels share the very same zIndex. How
-#       ever the zIndex changes within the polygon.
-# TODO: zIndex problems. I still have a lot of z-fighting, mostly due to the "todo" above
-#       Polygons would need a zIndex calculus for each pixel.
+#       ever the zIndex changes within the polygon. Need a per pixel zIndex calculus
 # TODO: tiny_house.yaml: size=2.0 stuff get out of universe, but should not. Rescale into
 #       parent scale context wrong I assume. Need to check where and how I did that.
-# TODO: Naming convention: always use named parameters instead of something like
+# NOTE: Naming convention: always use named parameters instead of something like
 #       point=(x,y,z). Easier for GUI (edit objects) and YAML
 
 # Main TODO:
-# - z-Index problems, z-fighting
+# - z-Index problems, z-fighting (example: cube.yaml)
 # - Rotation fix needed?
-# - Fast_fill in Draw2D with [0 for t in range(0..x)]
 # - True BoundingBox algorithm (and add cross-lines, too)
-# - camera may be child of Miniverse
+# - camera may be child of Miniverse (check functionality)
 # - Enter a room check (are walls done correctly?)
 # - ObjectBrowser implementation
-# - spheres, cubes, planes and other geometric forms
 # - I guess there are still lots of bugs in the Miniverse placing (recursively place,
 #   rotate, translate and resize other Miniverses (such as Function() or Sphere()) into
 #   Singulersum)
-# - Fast polyfill or: don't use polys at all, use a SurroundingPoly only.
+# - Maybe don't use polys at all, use a SurroundingPoly only.
 # - Game and Mobile version of Singulversum
-# - .yaml files to configure Singulversi
 # - singulersum_video scenery.yaml -fps 30 scenery.mp4
 # - singulersum_animatedgif scenery.yaml -fps 30 scenery.gif
 # - singulersum_jpg scenery.yaml -time 0:20.5 -cam 1.0x0.1x0.3x0x0x0 scenery_20_5.jpg
 
 # TODO later:
 # - Debug verbousity
-# - Test suite
+# - Test suite (in progress)
 # - colors in STL's
-# - .yaml files to load a scenery/singulersum
 # - texture mapping
 # - 3D text
 # - 3D sphere/camera illustration
@@ -117,7 +108,8 @@
 # - VR360° videos
 
 # LEARNINGS:
-# - The performance killer (at least using python) is filling polygons.
+# - The performance killer (at least using python) is filling polygons. Current status: a
+#   bit improved
 # - fast array init essential: array.array("B", [0 for t in range(self.width*4) ] )
 # - STL is easy to read (both binary and textual)
 
@@ -382,11 +374,11 @@ class Miniverse(VectorMath, Debug):
     # animate the Miniverse
     def animation(self, **args):
         sg = self.sg
-        self.debug("next animation cycle for {:s}".format(str(self)))
+        args["time"] = self.getTime()
+        self.debug("next animation cycle for {:s}, time:{:0.2f}".format(str(self), args["time"]))
         ox = self.x
         oy = self.y
         oz = self.z
-        args["time"] = self.getTime()
 
         """
         type: animation
@@ -1092,7 +1084,6 @@ class Plane(Object):
                 p = self.vec_add(p, self.vec_mul_scalar(v, i/amount) )
                 p = self.vec_add(p, self.vec_mul_scalar(s, j/amount) )
                 corps[i][j] = p
-                print(p)
         # make polis
         cnt=0
         for i in range(0,amount-1):

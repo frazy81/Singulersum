@@ -169,7 +169,8 @@ class SingulersumGUI(Tk):
         while True:
             print("state: isShowing=", self.isShowing, "isPlaying=", self.isPlaying)
             if self.quitAfter is not None and self.startTime+self.quitAfter<=time.time():
-                print("quitAfter "+str(self.quitAfter)+"s elapsed. Terminating.")
+                print("quitAfter "+str(self.quitAfter)+"s elapsed. Terminating in 2s.")
+                time.sleep(2)
                 self.isTerminating=True
             if self.isTerminating is True:
                 # terminating is stepping out of this while!

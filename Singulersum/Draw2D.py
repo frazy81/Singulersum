@@ -8,6 +8,7 @@
 # 2021-03-27 ph alpha not part of color fix
 # 2021-03-27 ph polygon stroke optional
 # 2021-03-28 ph polygon wide out of range fix
+# 2021-04-01 ph points(), the fast horizontal fill method for point(). polygons faster
 
 """
     class Singulersum.Draw2D()
@@ -45,9 +46,6 @@ from queue import Empty
 
 from Singulersum.Debug import Debug
 from Singulersum.VectorMath import VectorMath
-
-# TODO: maybe poly_fastfill using self.data[y*height*4+x*4:]=[0 for t in range(linewidth*4) ] ) to fast fill continuous lines?
-#       see https://stackoverflow.com/questions/45841515/change-multiple-array-values-to-a-value
 
 class Draw2D(Debug):
 
@@ -187,6 +185,42 @@ class Draw2D(Debug):
             if zIndex is not None:
                 self.zIndex(x, y, zIndex)
 
+    def points(self, x1, x2, y, color="white", alpha=0, zIndex=None):
+        # fill points between x1 and x2 in line y as fast as fast as possible. Optimizing
+        # polygon throughput. This is basically the same code as point, but it does many
+        # in a row at a time and this is much faster. Also because index checks are in
+        # polygon_fill itself.
+        if color is None:
+            return False
+        color = self.getColor(color)
+        xd = x1 << 2     # x=x*4, x for data (color array)
+        xi = x1          # x for zBuffer array
+        xdend = x2 << 2
+        while xd<=xdend:
+            zIndexAt = self.zBuf[y][xi]
+            if alpha!=0:
+                # get old colors
+                r = self.data[y][xd]
+                g = self.data[y][xd+1]
+                b = self.data[y][xd+2]
+                # alpha it to "black", alpha=256: black (background), alpha=0 original color
+                color0=int( alpha/255.0*r + (255-alpha)/255.0*color[0] )
+                color1=int( alpha/255.0*g + (255-alpha)/255.0*color[1] )
+                color2=int( alpha/255.0*b + (255-alpha)/255.0*color[2] )
+                color=(color0, color1, color2)
+            show=True
+            if zIndex is not None:
+                if zIndexAt<zIndex:
+                    show=False
+            if show is True:
+                self.data[y][xd]=color[0]
+                self.data[y][xd+1]=color[1]
+                self.data[y][xd+2]=color[2]
+                if zIndex is not None:
+                    self.zBuf[y][xi]=zIndex
+            xd+=4
+            xi+=1
+
     def line(self, x0, y0, x1, y1, color="white", alpha=0, thickness=1, antialias=True, zIndex=None):
         if thickness==1:
             if antialias is True:
@@ -309,13 +343,13 @@ class Draw2D(Debug):
                 self.point(x, ipart(intery)+1, color=color, alpha=255-fpart(intery)*255, zIndex=zIndex)
                 intery=intery+gradient
 
-    def polygon_fill(self, *kwargs, fill="white", alpha=0, zIndex=None):
+    def polygon_fill(self, *kwargs, fill="white", alpha=0, zIndex=None, fast=False):
         # https://alienryderflex.com/polygon_fill/
         polyCorners=len(kwargs)
         # find min/max x, min/max y
-        minx=self.width
+        minx=self.width-1
         maxx=0
-        miny=self.height
+        miny=self.height-1
         maxy=0
         for p in kwargs:
             if p[0]<minx:
@@ -326,15 +360,15 @@ class Draw2D(Debug):
                 miny=p[1]
             if p[1]>maxy:
                 maxy=p[1]
-        # polygon wide out of range fixes:
+        # polygon width out of range fixes:
         if minx<0:
             minx=0
-        if maxx>self.width:
-            maxx=self.width
+        if maxx>self.width-1:
+            maxx=self.width-1
         if miny<0:
             miny=0
-        if maxy>self.height:
-            maxy=self.height
+        if maxy>self.height-1:
+            maxy=self.height-1
         for y in range(miny, maxy):
             # build node list
             nodes=0
@@ -360,24 +394,14 @@ class Draw2D(Debug):
                     i+=1
             # fill the pixels between node pairs
             for i in range(0, nodes, 2):
-                if nodeX[i] >= self.width:
+                if nodeX[i] >= self.width-1:
                     break
                 if nodeX[i+1] > 0:
                     if nodeX[i]<0:
                         nodeX[i]=0
-                    if nodeX[i+1]>self.width:
-                        nodeX[i+1]=self.width
-                    for x in range(nodeX[i], nodeX[i+1]):
-                        show=True   # pixel is in "front" and we show it
-                        if zIndex is not None:
-                            if zIndex>self.zIndex(x, y):
-                                show=False
-                        if show is True:
-                            self.point(x, y, color=fill, alpha=alpha, zIndex=zIndex)
-                        if zIndex is not None and show is True:
-                            # the current poly is nearer to the camera, set new zIndex.
-                            # this should already have been done in point, just do again
-                            self.zIndex(x, y, zIndex)
+                    if nodeX[i+1]>self.width-1:
+                        nodeX[i+1]=self.width-1
+                    self.points(nodeX[i], nodeX[i+1], y, fill, alpha, zIndex)
 
     def polygon(self, *kwargs, stroke="white", fill="white", alpha=0, antialias=False, zIndex=None):
         p0 = kwargs[0]

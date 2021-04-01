@@ -31,8 +31,10 @@ class SingulersumYaml(Debug):
 
     def read(self, file=None, data=None):
         content = None
+        file_h = None
         if file is not None:
-            content = open(file, "r")
+            file_h = open(file, "r")
+            content = file_h
         if data is not None:
             content = data
         if content is None:
@@ -41,6 +43,8 @@ class SingulersumYaml(Debug):
         self.document = yaml.load(content, Loader=yaml.FullLoader)
         self.namespace["gui"]=self.document.pop("gui", None)
         self.singulersum_build([], self.parent, self.document)
+        if file is not None:
+            file_h.close()
         return self.namespace
 
     def singulersum_build(self, name, parent, document):

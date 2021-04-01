@@ -2,6 +2,7 @@
 
 # 2021-03-23 ph Created
 # 2021-03-24 ph up to date with current SingulersumYaml
+# 2021-04-01 ph Function x,y,z => fx, fy, fz
 
 """
     yaml.py
@@ -59,24 +60,13 @@ animator:
         test = """
 gui:
     isPlaying: True
-    stop: 1.0
 sg:
     scale: [5.0, 5.0, 5.0]
+    stop: 1.0
 animator:
     type: animation
     stop: 1.0
     start: 0.0
-    camera: cam
-    begin: [1.2, 2.0, 1.0]
-    end: [1.6, 0.1, 0.5]
-    x: begin[0] + (time*(end[0] - begin[0]))
-    y: begin[1] + (time*(end[1] - begin[1]))
-    z: begin[2] + (time*(end[2] - begin[2]))
-animator2:
-    type: animation
-    stop: 1.0
-    start: 0.0
-    camera: cam
     begin: [0, 0, 0]
     end: [1, 1, 1]
     x: begin[0] + (time*(end[0] - begin[0]))
@@ -86,34 +76,28 @@ cam:
     type: camera
     position: [1.0, 0.1, 0.2]
     lookat: [0.0, 0.0, 0.0]
-    update: animator2
+    update: animator
 f1:
     type: function
     visibility: True
-    x: x
-    y: y
-    z: sin(x)+sin(y)
+    fx: x
+    fy: y
+    fz: sin(x)+sin(y)
     rel: z
     scale: [5.0, 5.0, 5.0]
     size: 2.0
 f2:
     type: function
     visibility: False
-    x: x
-    y: y
-    z: sin(x)+sin(y)
+    fx: x
+    fy: y
+    fz: sin(x)+sin(y)
     rel: z
     scale: [5.0, 5.0, 5.0]
     size: 2.0
 p1:
     type: point
     point: [5.0, 5.0, 5.0]
-stl:
-    type: stl
-    visibility: False
-    file: ../stl/Utah_teapot.stl
-    place: [-1.0, -1.0, 0]
-default: cam
 
         """
 
@@ -136,11 +120,17 @@ default: cam
         sg.setTime(0.5)
         self.assertEqual(sg.time, 0.5)
 
-        sg.cameras["cam"].update()
-        self.assertEqual(sg.cameras["cam"].x, 0.5)
-        sg.setTime(1.0)
-        sg.cameras["cam"].update()
-        self.assertEqual(sg.cameras["cam"].x, 1.0)
+        print("update 1 for time=0.5")
+        sg.update()
+        print(sg.cameras["cam"].x, "=?", 0.5)
+        self.assertTrue(abs(sg.cameras["cam"].x-0.5)<0.1)
+        print("done update 1")
+        sg.setTime(0.9)
+        print("update 2 for time=0.9")
+        sg.update()
+        print(sg.cameras["cam"].x, "=?", 0.9)
+        self.assertTrue(abs(sg.cameras["cam"].x-0.9)<0.1)
+        print("done update 2")
 
         print("test_002 end.")
         print()
