@@ -255,217 +255,50 @@ class Camera(Miniverse):
 
         self.debug("setupCamera completed", timeit=timeit)
 
-    def isSpecialContext(self, context):
-        if "altitude" in context:
-            if context["altitude"]!=0.0:
-                return True
-        if "azimuth" in context:
-            if context["azimuth"]!=0.0:
-                return True
-        if "roll" in context:
-            if context["roll"]!=0.0:
-                return True
-        if "x" in context and context["x"]!=0.0:
-            return True
-        if "y" in context and context["y"]!=0.0:
-            return True
-        if "z" in context and context["z"]!=0.0:
-            return True
-        if "size" in context:
-            if context["size"]!=1.0:
-                return True
-        return False
-
-    # NOTE: the camera induced rotation/translation is done directly in project_p2d()
-    def applyContext(self, context, *kwargs, **args):
-        list = []
-        size = context["size"]
-        for p in kwargs:
-            if size!=1.0:
-                p = self.stretch(p, size, size, size)
-            p = self.rotate(p, context["azimuth"])
-            p = self.rotate(p, 0.0, context["altitude"])
-            p = self.rotate(p, 0.0, 0.0, context["roll"])
-            # translate to place
-            p = self.vec_add(p, (context["x"], context["y"], context["z"]))
-            list.append(p)
-        return list
-
-    def boundingBoxShow(self, versum, context):
-        self.debug("showBoundingBox")
-        bb_lines = []
-
-        r = versum.size
-        x = versum.x
-        y = versum.y
-        z = versum.z
-
-        # front
-        p0 = (r, 0-r, r)
-        p1 = (r, r, r)
-        p2 = (r, r, 0-r)
-        p3 = (r, 0-r, 0-r)
-        # back
-        p4 = (0-r, 0-r, r)
-        p5 = (0-r, r, r)
-        p6 = (0-r, r, 0-r)
-        p7 = (0-r, 0-r, 0-r)
-
-        line_points = [
-            [p0, p1, p2, p3],
-            [p0, p1, p5, p4],
-            [p1, p2, p6, p5],
-            [p0, p3, p7, p4],
-            [p3, p2, p6, p7],
-            [p4, p5, p6, p7],
-        ]
-        for lines in line_points:
-            lines = self.applyContext(context, *lines)
-            bb_lines.append( [ lines[0], lines[1], "white", 0 ] )
-            bb_lines.append( [ lines[1], lines[2], "white", 0 ] )
-            bb_lines.append( [ lines[2], lines[3], "white", 0 ] )
-            bb_lines.append( [ lines[3], lines[0], "white", 0 ] )
-
-        return bb_lines
-
-    def object_iterator(self, versum):
-        # we first calculate all polygons and process them later using different
-        # algorithms
-        # polys = [ {points=>[], distance=>1.2, normalvector=>()}, {...} ]
-        # basic object lists:
-        self.debug("object_iterator for "+str(versum))
-        polys = []
-        lines = []  # [ (p1, p2, color), ... ]
-        dots  = []  # [ (p1, color), ...]
-        context = {
-            "x"       : versum.x,
-            "y"       : versum.y,
-            "z"       : versum.z,
-            "size"    : versum.size,
-            "azimuth" : versum.azimuth,
-            "altitude": versum.altitude,
-            "roll"    : versum.roll,
+    def polygon_colorize(self, poly):
+        #self.debug("polygon normal vector before cam", normalvector)
+        normalvector = poly["normalvector"]
+        cameraContext = {
+            "x":          0.0,
+            "y":          0.0,
+            "z":          0.0,
+            "size":       1.0,
+            "azimuth":    180-self.view_azimuth,
+            "altitude":   -1*self.view_altitude,
+            "roll":       self.roll,
         }
-        isSpecialContext = self.isSpecialContext(context)
-
-        for name, obj in versum.objects.items():
-            # use K-means and implement multi core processing?
-
-            if obj.visibility is False:
-                continue
-
-            if self.parent.showOnlyBoundingBox is True:
-                if isinstance(obj, Line) or isinstance(obj, Dot) or isinstance(obj, Polygon) or isinstance(obj, CoordinateSystem):
-                    continue
-                lines.extend(self.boundingBoxShow(obj, context))
-
-            # BasicObjects
-            if isinstance(obj, Line):
-                p1 = (obj.x1, obj.y1, obj.z1)
-                p2 = (obj.x2, obj.y2, obj.z2)
-                if isSpecialContext:
-                    (p1, p2) = self.applyContext(context, p1, p2)
-                lines.append( [p1, p2, obj.color, obj.thickness] )
-            elif isinstance(obj, Dot):
-                p = (obj.x, obj.y, obj.z)
-                if isSpecialContext:
-                    p = self.applyContext(context, p)[0]
-                dots.append( [p, obj.color] )
-            elif isinstance(obj, Polygon):
-                poly = []
-                normalvector = None
-                colorize = 0
-                for i in range(0, len(obj.points)):
-                    p = obj.points[i]
-                    if isSpecialContext:
-                        p = self.applyContext(context, p)[0]
-                    poly.append( p )
-                normalvector = obj.normalvector
-                if isSpecialContext:
-                    normalvector = self.applyContext(context, normalvector)[0]
-                #self.debug("polygon normal vector before cam", normalvector)
-                cameraContext = {
-                    "x":          0.0,
-                    "y":          0.0,
-                    "z":          0.0,
-                    "size":       1.0,
-                    "azimuth":    180-self.view_azimuth,
-                    "altitude":   -1*self.view_altitude,
-                    "roll":       self.roll,
-                }
-                normalvector = self.applyContext(cameraContext, normalvector)[0]
-                if normalvector[0]==0 and normalvector[1]==0 and normalvector[2]==0:
-                    normalvector=(1e-06, 0.0, 0.0)
-                #self.debug("polygon", obj.name)
-                #self.debug("polygon normal vector", normalvector)
-                #self.debug("V_prime", self.V_prime)
-                dot_product = self.dot_product(self.V_prime, normalvector)
-                #self.debug("dot product", dot_product)
-                angle = acos( dot_product / (self.vec_len(self.V_prime)*self.vec_len(normalvector) ) )
-                angle = angle/pi*180
-                #self.debug("polygon angle between normal vector and view vector", angle)
-                if angle>90:
-                    colorize = abs(90-angle)/90
-                else:
-                    if self.parent.showBackside is True:
-                        # from back, set colorize=-1, back side of polygons are specially
-                        # color coded (like green, so that the user see's that something
-                        # is viewed from it's back)
-                        colorize = -1
-                    else:
-                        # show "normal" luminescense as if viewed from front
-                        colorize = abs(90-angle)/90
-                #self.debug("polygon colorize", colorize)
-                polys.append( { "points":poly, "normalvector":normalvector, "colorize":colorize, "fill":obj.fill, "stroke":obj.stroke, "alpha":obj.alpha, "name":obj.name } )
-            elif isinstance(obj, CoordinateSystem):
-                # ignore it! It added Lines to the parent context
-                pass
-
-            elif issubclass(type(obj), Object):
-                (ndots, nlines, npolys) = self.object_iterator(obj)
-                for d in ndots:
-                    (dot, color) = d
-                    if isSpecialContext:
-                        dot = self.applyContext(context, dot)[0]
-                    dots.append( [dot, color] )
-                for l in nlines:
-                    (p1, p2, color, thickness) = l
-                    if isSpecialContext:
-                        # TODO: does the list expansion work here? Or do I need indexing?
-                        # maybe I need: ps = self.applyContext...
-                        # p1 = ps[0]; p2 = ps[1]; !!! Seems to work I see grid when rotate
-                        (p1, p2) = self.applyContext(context, p1, p2)
-                    lines.append( [p1, p2, color, thickness] )
-                for p in npolys:
-                    ppoints = p["points"]   # points reserved for points not polys!
-                    normalvector = p["normalvector"]
-                    if isSpecialContext:
-                        # TODO: no stretch, no translate, just rotate
-                        normalvector = self.applyContext(context, normalvector)[0]
-                    colorize = p["colorize"]
-                    npoints = []
-                    for pt in ppoints:
-                        if isSpecialContext:
-                            pt = self.applyContext(context, pt)[0]
-                        npoints.append(pt)
-                    poly = { "points":npoints, "normalvector":normalvector, "colorize":colorize, "fill":p["fill"], "stroke":p["stroke"], "alpha":p["alpha"], "name":p["name"] }
-                    polys.append( poly )
-                pass
+        normalvector = self.applyContext(cameraContext, normalvector)[0]
+        if normalvector[0]==0 and normalvector[1]==0 and normalvector[2]==0:
+            normalvector=(1e-06, 0.0, 0.0)
+        #self.debug("polygon", obj.name)
+        #self.debug("polygon normal vector", normalvector)
+        #self.debug("V_prime", self.V_prime)
+        dot_product = self.dot_product(self.V_prime, normalvector)
+        #self.debug("dot product", dot_product)
+        angle = acos( dot_product / (self.vec_len(self.V_prime)*self.vec_len(normalvector) ) )
+        angle = angle/pi*180
+        #self.debug("polygon angle between normal vector and view vector", angle)
+        if angle>90:
+            colorize = abs(90-angle)/90
+        else:
+            if self.parent.showBackside is True:
+                # from back, set colorize=-1, back side of polygons are specially
+                # color coded (like green, so that the user see's that something
+                # is viewed from it's back)
+                colorize = -1
             else:
-                print("object type not known!")
-                exit(0)
-
-        return (dots, lines, polys)
+                # show "normal" luminescense as if viewed from front
+                colorize = abs(90-angle)/90
+        #self.debug("polygon colorize", colorize)
+        poly["colorize"] = colorize
 
     def image(self):
-        time = self.parent.time
-
         self.debug("cam.image() start")
         timeit = self.timeit()
 
         for name in ("x", "y", "z", "x0", "y0", "z0", "fov", "width", "height"):
             if self.lastRenderSettings[name]!=getattr(self, name):
-                print("image() detected change in camera settings. Call setupCamera()")
+                self.debug("image() detected change in camera settings. Call setupCamera()")
                 self.setupCamera()
 
         self.draw2d.clear()
@@ -475,24 +308,47 @@ class Camera(Miniverse):
         poly_hidden = 0
         poly_drawn  = 0
 
-        self.debug("1st step: iterating over ALL objects (polygons, lines, dots, ...)")
-        iteration_timing = self.timeit()
+        self.debug("getting all objects at time="+str(self.sg.time))
+        (sgdots, sglines, sgpolys) = self.sg.allObjects[self.sg.time]
+        poly_total = len(sgpolys)
+        self.debug("got "+str(poly_total)+" polynoms, "+str(len(sgdots))+" points, "+str(len(sglines))+" lines.")
 
-        (dots, lines, polys) = self.object_iterator(self.parent)
-        poly_total = len(polys)
-
-        self.debug("iteration is complete.", timeit=iteration_timing)
+        # from the Singulersum Dots, Lines and Polys, create the Camera Dots, Lines, Polys
+        dots  = []
+        lines = []
+        polys = []
 
         # calculate projections of all dots, lines, polys
-        self.debug("2nd step: calculate projected dots, lines, polys")
+        self.debug("1st step: calculate projected dots, lines, polys")
         step2timeit = self.timeit()
-        for i in range(len(dots)):
-            dots[i][0] = self.project_p2d(dots[i][0])
-        for i in range(len(lines)):
-            lines[i][0] = self.project_p2d(lines[i][0])
-            lines[i][1] = self.project_p2d(lines[i][1])
-        for poly in polys:
+        for i in range(len(sgdots)):
+            dot = [
+                [ dotssg[i][0][0], sgdots[i][0][1], sgdots[i][0][2] ],    # 3D coordinates
+                sgdots[i][1]  # color
+            ]
+            dot[0] = self.project_p2d(dot[0])
+            dots.append(dot)
+        for i in range(len(sglines)):
+            line = [
+                [ sglines[i][0][0], sglines[i][0][1], sglines[i][0][2] ], # 3D coord. 1st point
+                [ sglines[i][1][0], sglines[i][1][1], sglines[i][1][2] ], # 3D coord. 2st point
+                sglines[i][2],    # color
+                sglines[i][3],    # thickness
+            ]
+            line[0] = self.project_p2d(line[0])
+            line[1] = self.project_p2d(line[1])
+            lines.append(line)
+        for poly in sgpolys:
             npoints = []
+            # { "points":poly, "normalvector":normalvector, "fill":obj.fill, "stroke":obj.stroke, "alpha":obj.alpha, "name":obj.name }
+            npoly = {
+                "points": poly["points"],
+                "normalvector": poly["normalvector"],
+                "fill": poly["fill"],
+                "stroke": poly["stroke"],
+                "alpha": poly["alpha"],
+                "name": poly["name"],
+            }
             distance = 0.0
             all_distances_negative = True
             # 2021-03-26 ph doing a "poly.distance=max(poly_points.distance)" causes
@@ -508,12 +364,13 @@ class Camera(Miniverse):
                 npoints.append(p)
             distance /= len(npoints)
             if all_distances_negative is True:
-                poly["visibility"]=False
+                npoly["visibility"]=False
             else:
-                poly["visibility"]=True
-            poly["points"] = npoints
-            poly["distance"] = distance
-        self.debug("2nd step done", timeit=step2timeit)
+                npoly["visibility"]=True
+            npoly["points"] = npoints
+            npoly["distance"] = distance
+            polys.append(npoly)
+        self.debug("1st step done", timeit=step2timeit)
 
         self.debug("sort polygons by distance (closest polygon first)")
         timesort = self.timeit()
@@ -529,7 +386,7 @@ class Camera(Miniverse):
         self.debug("conf: polyGrid", self.parent.polyGrid)
         self.debug("conf: useFastHiddenPolyCheck", self.parent.useFastHiddenPolyCheck)
 
-        self.debug("3nd step - drawing")
+        self.debug("2nd step - drawing")
         poly_timing = self.timeit()
         for poly in polys:
             if poly["visibility"] is False:
@@ -556,6 +413,7 @@ class Camera(Miniverse):
                     fill = self.draw2d.getColor(poly["fill"])
                 if poly["stroke"] is not None:
                     stroke = self.draw2d.getColor(poly["stroke"])
+                self.polygon_colorize(poly)
                 alpha = poly["alpha"]
                 if poly["colorize"]>0:
                     if fill is not None:

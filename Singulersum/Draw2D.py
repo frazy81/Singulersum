@@ -46,6 +46,9 @@ from queue import Empty
 from Singulersum.Debug import Debug
 from Singulersum.VectorMath import VectorMath
 
+# TODO: maybe poly_fastfill using self.data[y*height*4+x*4:]=[0 for t in range(linewidth*4) ] ) to fast fill continuous lines?
+#       see https://stackoverflow.com/questions/45841515/change-multiple-array-values-to-a-value
+
 class Draw2D(Debug):
 
     maxFloat  = sys.float_info.max

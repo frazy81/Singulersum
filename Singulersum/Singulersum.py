@@ -35,6 +35,9 @@
 # 2021-03-28 ph sg.showOnlyBoundingBox
 # 2021-03-29 ph update function in Miniverse
 # 2021-03-29 ph objects relatively positioned to their parent (x,y,z is place in parent)
+# 2021-04-01 ph Miniverse time fix (Miniverse time relative to Singulersum time)
+# 2021-04-01 ph Camera now part of Miniverse instead of Singulersum
+# 2021-04-01 ph Function class: time as variable so that func. may depend on time
 
 """
     class Singulersum.Singulersum()
@@ -76,8 +79,6 @@
 #       ever the zIndex changes within the polygon.
 # TODO: zIndex problems. I still have a lot of z-fighting, mostly due to the "todo" above
 #       Polygons would need a zIndex calculus for each pixel.
-# TODO: Function() class should enable the use the sg.time, so that custom functions may
-#       change with time.
 # TODO: tiny_house.yaml: size=2.0 stuff get out of universe, but should not. Rescale into
 #       parent scale context wrong I assume. Need to check where and how I did that.
 # TODO: Naming convention: always use named parameters instead of something like
@@ -85,6 +86,11 @@
 
 # Main TODO:
 # - z-Index problems, z-fighting
+# - Rotation fix needed?
+# - Fast_fill in Draw2D with [0 for t in range(0..x)]
+# - True BoundingBox algorithm (and add cross-lines, too)
+# - camera may be child of Miniverse
+# - Enter a room check (are walls done correctly?)
 # - ObjectBrowser implementation
 # - spheres, cubes, planes and other geometric forms
 # - I guess there are still lots of bugs in the Miniverse placing (recursively place,
@@ -110,6 +116,11 @@
 # - Binocular tests, stereoview with two cameras
 # - VR360° videos
 
+# LEARNINGS:
+# - The performance killer (at least using python) is filling polygons.
+# - fast array init essential: array.array("B", [0 for t in range(self.width*4) ] )
+# - STL is easy to read (both binary and textual)
+
 from PIL import Image
 from PIL import ImageDraw
 from math import *
@@ -127,9 +138,11 @@ class Miniverse(VectorMath, Debug):
     def __init__(self, parent, *kwargs, **args):
         super().__init__()
         self.parent=parent
-        self.top=None
+        if isinstance(parent, Singulersum):
+            self.sg = parent
+        else:
+            self.sg=parent.sg
         self.startTime = time.time()
-        self.time      = 0.0
         self.scale     = (1.0, 1.0, 1.0)
         self.x         = 0.0
         self.y         = 0.0
@@ -140,6 +153,8 @@ class Miniverse(VectorMath, Debug):
         self.roll      = 0.0
         self.object_count = 0
         self.objects   = {}
+        self.cameras   = {}
+        self.lights    = {}
         self.id        = ""
         self.name      = None
         self.visibility = True
@@ -161,13 +176,6 @@ class Miniverse(VectorMath, Debug):
             if name in args and hasattr(self, name):
                 self.debug("auto fill "+name+" with "+str(args[name]))
                 setattr(self, name, args[name])
-
-    def top(self):
-        if self.top is not None:
-            return self.top
-        while parent is not None and isinstance(parent, Singulersum) is False:
-            parent = parent.parent
-        self.top=parent
 
     def reset(self):
         self.debug("Miniverse.reset(), delete all objects")
@@ -263,6 +271,23 @@ class Miniverse(VectorMath, Debug):
         self.objects[name]=obj
         return obj
 
+    # camera and light
+
+    def camera(self, *kwargs, **args):
+        assert("name" in args)
+        from Singulersum.Camera import Camera
+        camera = Camera(self, *kwargs, **args)
+        self.cameras[args["name"]]=camera
+        return camera
+
+    # light not yet implemented!
+    #def light(self, name=None, *kwargs, **args):
+    #    light = Light(self, *kwargs, **args)
+    #    self.lights[name]=light
+    #    return light
+
+    # timing and animate SG
+
     # stringifier
     def __str__(self):
         string = type(self).__name__
@@ -356,17 +381,12 @@ class Miniverse(VectorMath, Debug):
 
     # animate the Miniverse
     def animation(self, **args):
-        sg = self.parent
+        sg = self.sg
         self.debug("next animation cycle for {:s}".format(str(self)))
         ox = self.x
         oy = self.y
         oz = self.z
-        self.debug("args:", args)
-        self.debug("old values:")
-        self.debug("  x", ox)
-        self.debug("  y", oy)
-        self.debug("  z", oz)
-        args["time"] = sg.time      # TODO: or camera setup time! if it inherits from Mini
+        args["time"] = self.getTime()
 
         """
         type: animation
@@ -374,17 +394,16 @@ class Miniverse(VectorMath, Debug):
         start:time>0.0
         begin: [1.2, 2.0, 1.0]
         end: [1.6, 0.1, 0.5]
-        camera: cam         # or miniverse: xyz
         x: begin[0] + (time*(end[0] - begin[0]))
         y: begin[1] + (time*(end[1] - begin[1]))
         z: begin[2] + (time*(end[2] - begin[2]))
         """
         if "start" in args:
-            if sg.time<args["start"]:
+            if self.getTime()<args["start"]:
                 return False
         if "stop" in args:
-            if sg.time>args["stop"]:
-                self.parent.callback("animation_stop", object=self)
+            if self.getTime()>args["stop"]:
+                self.sg.callback("animation_stop", object=self)
                 return False
 
         type = "unknown"
@@ -429,11 +448,6 @@ class Miniverse(VectorMath, Debug):
             self.debug("animation(), setPlace(", self.x, self.y, self.z, ")")
             self.setPlace(self.x, self.y, self.z)
 
-        self.debug("current/new values:")
-        self.debug("  x", self.x)
-        self.debug("  y", self.y)
-        self.debug("  z", self.z)
-
         if ox==self.x and oy==self.y and oz==self.z:
             # no change, return False
             # turned out to be wrong because of mathematical precision, sometimes there's
@@ -441,6 +455,42 @@ class Miniverse(VectorMath, Debug):
             return True
         else:
             return True
+
+    def isSpecialContext(self, context):
+        if "altitude" in context:
+            if context["altitude"]!=0.0:
+                return True
+        if "azimuth" in context:
+            if context["azimuth"]!=0.0:
+                return True
+        if "roll" in context:
+            if context["roll"]!=0.0:
+                return True
+        if "x" in context and context["x"]!=0.0:
+            return True
+        if "y" in context and context["y"]!=0.0:
+            return True
+        if "z" in context and context["z"]!=0.0:
+            return True
+        if "size" in context:
+            if context["size"]!=1.0:
+                return True
+        return False
+
+    # NOTE: the camera induced rotation/translation is done directly in project_p2d()
+    def applyContext(self, context, *kwargs, **args):
+        list = []
+        size = context["size"]
+        for p in kwargs:
+            if size!=1.0:
+                p = self.stretch(p, size, size, size)
+            p = self.rotate(p, context["azimuth"])
+            p = self.rotate(p, 0.0, context["altitude"])
+            p = self.rotate(p, 0.0, 0.0, context["roll"])
+            # translate to place
+            p = self.vec_add(p, (context["x"], context["y"], context["z"]))
+            list.append(p)
+        return list
 
     def setUpdate(self, func):
         self.updateFunction = func
@@ -450,12 +500,25 @@ class Miniverse(VectorMath, Debug):
         self.debug("Miniverse().update() for "+str(self))
         if self.updateFunction is not None:
             self.debug("updateFunction for "+str(self)+" not None. Calling the function.")
-            if self.updateFunction(self):
+            if self.updateFunction(self) is True:
                 changed = True
         for name, obj in self.objects.items():
             if obj.update() is True:
                 changed = True
+        # light not yet implemented...
+        #for light in self.lights:
+        #    if light.update() is True:
+        #        changed = True
+        for name, cam in self.cameras.items():
+            if cam.update() is True:
+                changed = True
         return changed
+
+    def getTime(self):
+        # this Miniverse time is:
+        # thisMiniverse.startTime-Singulersum.startTime+Singulersum.time
+        # for making it Multithreading capable, must use function, not object property.
+        return self.startTime-self.sg.startTime+self.sg.time
 
 class Singulersum(Miniverse):
 
@@ -471,11 +534,10 @@ class Singulersum(Miniverse):
 
     def __init__(self, *kwargs, **args):
         super().__init__(self, *kwargs, **args)
-        self.cameras   = {}
-        self.lights    = {}
         self.fps       = 0
         self.timing    = "fix"  # rt=realtime or fix
         self.timingFps = 30     # for timing=fix, choose framerate
+        self.time      = 0.0    # relative time in Singulversum
         self.zBuffering= True   # hide polygons in background
 
         if "callback" in args:
@@ -491,7 +553,13 @@ class Singulersum(Miniverse):
         self.polyOnlyGrid           = False      # show only lines of polynoms
         self.polyOnlyPoint          = False      # show only point clouds
         self.polyGrid               = False
-        self.parent    = None
+
+        # update() function updates the Singulersum.time and then computes all absolute
+        # positions of all objects (and subobjects) at that time and throws them in a
+        # linear (not nested) list with key {time} into self.allObjects. This is then used
+        # in the Camera.image() method to compute the camera picture and render it using
+        # Draw2D
+        self.allObjects = {}
         pass
 
     def reset(self):
@@ -506,23 +574,6 @@ class Singulersum(Miniverse):
         self.lights={}         # delete all lights
         super().reset()
 
-    # camera and light
-
-    def camera(self, *kwargs, **args):
-        assert("name" in args)
-        from Singulersum.Camera import Camera
-        camera = Camera(self, *kwargs, **args)
-        self.cameras[args["name"]]=camera
-        return camera
-
-    # light not yet implemented!
-    #def light(self, name=None, *kwargs, **args):
-    #    light = Light(self, *kwargs, **args)
-    #    self.lights[name]=light
-    #    return light
-
-    # timing and animate SG
-
     def setTime(self, t):
         self.time=t
 
@@ -533,24 +584,162 @@ class Singulersum(Miniverse):
             self.time += 1.0/self.timingFps
         return self.time
 
+    def boundingBoxShow(self, versum, context):
+        self.debug("showBoundingBox")
+        bb_lines = []
+
+        r = versum.size
+        x = versum.x
+        y = versum.y
+        z = versum.z
+
+        # front
+        p0 = (r, 0-r, r)
+        p1 = (r, r, r)
+        p2 = (r, r, 0-r)
+        p3 = (r, 0-r, 0-r)
+        # back
+        p4 = (0-r, 0-r, r)
+        p5 = (0-r, r, r)
+        p6 = (0-r, r, 0-r)
+        p7 = (0-r, 0-r, 0-r)
+
+        line_points = [
+            [p0, p1, p2, p3],
+            [p0, p1, p5, p4],
+            [p1, p2, p6, p5],
+            [p0, p3, p7, p4],
+            [p3, p2, p6, p7],
+            [p4, p5, p6, p7],
+        ]
+        for lines in line_points:
+            # TODO: better way?
+            lines = self.applyContext(context, *lines)
+            bb_lines.append( [ lines[0], lines[1], "white", 0 ] )
+            bb_lines.append( [ lines[1], lines[2], "white", 0 ] )
+            bb_lines.append( [ lines[2], lines[3], "white", 0 ] )
+            bb_lines.append( [ lines[3], lines[0], "white", 0 ] )
+
+        return bb_lines
+
+    def object_iterator(self, versum):
+        # we first calculate all polygons and process them later using different
+        # algorithms
+        # polys = [ {points=>[], distance=>1.2, normalvector=>()}, {...} ]
+        # basic object lists:
+        self.debug("object_iterator for "+str(versum))
+        polys = []
+        lines = []  # [ (p1, p2, color), ... ]
+        dots  = []  # [ (p1, color), ...]
+        context = {
+            "x"       : versum.x,
+            "y"       : versum.y,
+            "z"       : versum.z,
+            "size"    : versum.size,
+            "azimuth" : versum.azimuth,
+            "altitude": versum.altitude,
+            "roll"    : versum.roll,
+        }
+        isSpecialContext = self.isSpecialContext(context)
+
+        for name, obj in versum.objects.items():
+            # use K-means and implement multi core processing?
+
+            if obj.visibility is False:
+                continue
+
+            if self.parent.showOnlyBoundingBox is True:
+                if isinstance(obj, Line) or isinstance(obj, Dot) or isinstance(obj, Polygon) or isinstance(obj, CoordinateSystem):
+                    continue
+                lines.extend(self.boundingBoxShow(obj, context))
+
+            # BasicObjects
+            if isinstance(obj, Line):
+                p1 = (obj.x1, obj.y1, obj.z1)
+                p2 = (obj.x2, obj.y2, obj.z2)
+                if isSpecialContext:
+                    (p1, p2) = self.applyContext(context, p1, p2)
+                lines.append( [p1, p2, obj.color, obj.thickness] )
+            elif isinstance(obj, Dot):
+                p = (obj.x, obj.y, obj.z)
+                if isSpecialContext:
+                    p = self.applyContext(context, p)[0]
+                dots.append( [p, obj.color] )
+            elif isinstance(obj, Polygon):
+                poly = []
+                normalvector = None
+                colorize = 0
+                for i in range(0, len(obj.points)):
+                    p = [ obj.points[i][0], obj.points[i][1], obj.points[i][2] ]
+                    if isSpecialContext:
+                        p = self.applyContext(context, p)[0]
+                    poly.append( p )
+                normalvector = obj.normalvector
+                if isSpecialContext:
+                    normalvector = self.applyContext(context, normalvector)[0]
+
+                polys.append( { "points":poly, "normalvector":normalvector, "fill":obj.fill, "stroke":obj.stroke, "alpha":obj.alpha, "name":obj.name } )
+            elif isinstance(obj, CoordinateSystem):
+                # ignore it! It added Lines to the parent context
+                pass
+
+            elif issubclass(type(obj), Object):
+                (ndots, nlines, npolys) = self.object_iterator(obj)
+                for d in ndots:
+                    (dot, color) = d
+                    if isSpecialContext:
+                        dot = self.applyContext(context, dot)[0]
+                    dots.append( [dot, color] )
+                for l in nlines:
+                    (p1, p2, color, thickness) = l
+                    if isSpecialContext:
+                        # TODO: does the list expansion work here? Or do I need indexing?
+                        # maybe I need: ps = self.applyContext...
+                        # p1 = ps[0]; p2 = ps[1]; !!! Seems to work I see grid when rotate
+                        (p1, p2) = self.applyContext(context, p1, p2)
+                    lines.append( [p1, p2, color, thickness] )
+                for p in npolys:
+                    ppoints = p["points"]   # points reserved for points not polys!
+                    normalvector = [ p["normalvector"][0], p["normalvector"][1], p["normalvector"][2] ]
+                    if isSpecialContext:
+                        # TODO: no stretch, no translate, just rotate
+                        normalvector = self.applyContext(context, normalvector)[0]
+                    npoints = []
+                    for pt in ppoints:
+                        if isSpecialContext:
+                            pt = self.applyContext(context, pt)[0]
+                        npoints.append(pt)
+                    poly = { "points":npoints, "normalvector":normalvector, "fill":p["fill"], "stroke":p["stroke"], "alpha":p["alpha"], "name":p["name"] }
+                    polys.append( poly )
+                pass
+            else:
+                print("object type not known!")
+                exit(0)
+
+        return (dots, lines, polys)
+
     def update(self):
         changed = False
-        self.debug("Singulersum().update() is updating the Singulersum")
-        for name, obj in self.objects.items():
-            if obj.update() is True:
-                changed = True
-        # light not yet implemented...
-        #for light in self.lights:
-        #    if light.update() is True:
-        #        changed = True
-        for name, cam in self.cameras.items():
-            if cam.update() is True:
-                changed = True
-        self.timeAdvance()
+        self.debug("step 0: Singulersum().update() is updating the Singulersum for time="+str(self.time))
+        timeit = self.timeit()
+        changed = super().update()
+        if self.stop<=self.time:
+            # force animation end
+            changed = False
         if changed is False:
             self.debug("nothing has changed in the Singulersum: callback animation_stop")
             self.callback("animation_stop", object=self)
+        self.debug("step 0 Singulersum().update() is calculating absolute positions.")
+        (dots, lines, polys) = self.object_iterator(self)
+        self.allObjects[self.time] = [dots, lines, polys]
+        self.debug("step 0 complete", timeit=timeit)
         return changed
+
+    def frameDone(self, time):
+        # done with frame at time "time", forget this time in self.allObjects
+        # this call is needed for Garbage Collection, otherwise the mem fills up.
+        self.allObjects.pop(time, None)
+        return True
 
     def quit(self):
         super().quit()
@@ -669,8 +858,13 @@ class Function(Object):
         self.amount=amount
         self.rel=rel
         self.alpha=alpha
+        # if function uses parameter time, it must be recalculated for each new "time"
+        self.dependsOnTime = False
         self.fill = fill
         self.stroke = stroke
+        self.fx=fx
+        self.fy=fy
+        self.fz=fz
         super().__init__(parent, *kwargs, **args)
         if rel is None:
             # check for x in x
@@ -695,14 +889,25 @@ class Function(Object):
                 print("unsupported Function.rel=", rel, "must be x,y or z")
                 exit(0)
             self.rel=rel
-        self.fx=fx
-        self.fy=fy
-        self.fz=fz
+        # check if time is used and set dependsOnTime accordingly
+        if self.fx.find("time")!=-1 or self.fy.find("time")!=-1 or self.fz.find("time")!=-1:
+            self.dependsOnTime=True
         self.createPolygons()
 
     def update(self):
+        changed = False
         # TODO: if x,y or z depend on time, then change polys here and return True!
-        return False
+        if self.dependsOnTime is True:
+            # forget previous polygons and create new ones.
+            self.objects = {}
+            self.createPolygons()
+            changed = True
+        else:
+            changed = False
+        changed_child = super().update()
+        if changed_child is True:
+            changed = True
+        return changed
 
     def createPolygons(self):
         i=-1
@@ -745,9 +950,9 @@ class Function(Object):
         self.debug("polygon count for this function: ", cnt)
 
     def eval(self, x, y, z):
-        nx=eval(self.fx, globals(), {"x":x, "y":y, "z":z} )
-        ny=eval(self.fy, globals(), {"x":x, "y":y, "z":z} )
-        nz=eval(self.fz, globals(), {"x":x, "y":y, "z":z} )
+        nx=eval(self.fx, globals(), {"x":x, "y":y, "z":z, "time":self.sg.time} )
+        ny=eval(self.fy, globals(), {"x":x, "y":y, "z":z, "time":self.sg.time} )
+        nz=eval(self.fz, globals(), {"x":x, "y":y, "z":z, "time":self.sg.time} )
         return (nx,ny,nz)
 
 class Sphere(Object):

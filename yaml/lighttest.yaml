@@ -2,11 +2,11 @@
 
 gui:
     animated: True
-    stop: 12
     camera: cam1
 sg:
     scale: [5.0, 5.0, 5.0]
     showBackside: True
+    stop: 12
 cs:
     type: coordinatesystem
 animator:

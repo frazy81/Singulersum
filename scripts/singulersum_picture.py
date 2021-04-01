@@ -82,6 +82,7 @@ class SingulersumPicture(Debug):
                     return True
                 self.debug("build frame for Singulersum time:", self.sg.time)
                 rgba = self.cam.image()
+                self.sg.frameDone(self.time)
                 img = Image.frombytes("RGBA", (self.width, self.height), rgba, decoder_name="raw").convert("RGB")
                 output = self.output.format(frame)
                 img.save(output)

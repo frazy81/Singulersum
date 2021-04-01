@@ -2,12 +2,12 @@
 
 gui:
     animated: False
-    stop: 12
     camera: cam1
 sg:
     scale: [5.0, 5.0, 5.0]
     showBackside: True
     showOnlyBoundingBox: False
+    stop: 12
 cs:
     type: coordinatesystem
 cam1:

@@ -3,12 +3,12 @@
 
 gui:
     animated: True
-    stop: 12.0
     camera: cam1
 sg:
     scale: [5.0, 5.0, 5.0]
     zBuffering: False
     showBackside: False
+    stop: 12.0
 cs:
     type: coordinatesystem
 animator:

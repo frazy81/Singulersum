@@ -192,7 +192,9 @@ class SingulersumGUI(Tk):
                 self.showImage()
                 self.update()
                 self.update_idletasks()
+                continue
 
+            self.sg.timeAdvance()
             self.sg.update()
             self.showImage()
 
@@ -639,7 +641,7 @@ class CanvasInteract():
             self.camInitialY = self.cam.y
             self.camInitialZ = self.cam.z
             self.initial = (x, y)
-            print("select:", x, y)
+            print("initial mouse-x/y:", x, y)
             self.azimuth     = math.atan2(self.cam.y, self.cam.x)
             self.gui.isPlaying=False
             self.gui.isShowing=True

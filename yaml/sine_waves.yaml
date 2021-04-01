@@ -1,13 +1,14 @@
 # 2021-03-22 ph Created
 # 2021-03-26 ph animator_rotate
+# 2021-04-01 ph sin(x)+sin(y) => sin(x+3*time)+sin(y+3*time)
 
 gui:
     animated: True
-    stop: 12.0
     camera: cam1
 sg:
     scale: [5.0, 5.0, 5.0]
     showBackside: False
+    stop: 12.0
 cs:
     type: coordinatesystem
 animator:
@@ -37,7 +38,7 @@ f1:
     visibility: True
     fx: x
     fy: y
-    fz: sin(x)+sin(y)
+    fz: sin(x+time*3)+sin(y+time*3)
     rel: z
     scale: [5.0, 5.0, 5.0]
     size: 1
