@@ -400,13 +400,16 @@ class Draw2D(Debug):
                         nodeX[i]=0
                     if nodeX[i+1]>self.width-1:
                         nodeX[i+1]=self.width-1
-                    self.points(nodeX[i], nodeX[i+1], y, fill, alpha, zIndex)
+                    self.points(nodeX[i], nodeX[i+1], y, color=fill, alpha=alpha, zIndex=zIndex)
 
-    def polygon(self, *kwargs, stroke="white", fill="white", alpha=0, antialias=False, zIndex=None):
+    def polygon(self, *kwargs, fill=None, stroke=None, alpha=0, antialias=False, zIndex=None):
+        # NOTE: fill and stroke must be None, if not a None from outside results in the default
+        # color
         p0 = kwargs[0]
         pl = kwargs[0]
         # always fill for zIndex:
-        self.polygon_fill(*kwargs, fill=fill, alpha=alpha, zIndex=zIndex)
+        if fill is not None:
+            self.polygon_fill(*kwargs, fill=fill, alpha=alpha, zIndex=zIndex)
         if stroke is not None:
             for i in range(1,len(kwargs)):
                 p=kwargs[i]

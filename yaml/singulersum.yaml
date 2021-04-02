@@ -1,6 +1,11 @@
 # 2021-03-27 ph Created
 # 2021-04-02 ph scale is float (before: tuple)
 
+yaml:
+    application: Singulersum
+    url: https://github.com/frazy81/Singulersum
+    min-version: 2021-04-02
+    min-yaml-version: 2021-04-02
 gui:
     animated: False
     camera: cam1

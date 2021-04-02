@@ -2,6 +2,11 @@
 # 2021-03-26 ph fov: 130    # FOV: field of view
 # 2021-04-02 ph scale is float (before: tuple)
 
+yaml:
+    application: Singulersum
+    url: https://github.com/frazy81/Singulersum
+    min-version: 2021-04-02
+    min-yaml-version: 2021-04-02
 gui:
     # for singulersum_video we set animated: True, but should not be for singulersum_gui,
     # too slow

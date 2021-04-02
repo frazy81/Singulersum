@@ -42,6 +42,7 @@
 # 2021-04-01 ph Singulersum subobject hierarchy fixes (positions, sizes)
 # 2021-04-02 ph scale is float (not tuple, one value for each axis anymore)
 # 2021-04-02 ph animation(): either x,y,z or spherical_radius, -azimuth, -altitude
+# 2021-04-02 ph version checks (versions are now dates)
 
 """
     class Singulersum.Singulersum()
@@ -74,12 +75,15 @@
      - PIL (Pillow)
 """
 
+# NOTE: Naming convention: always use named parameters instead of something like
+#       point=(x,y,z). Easier for GUI (edit objects) and YAML
+
 # TODO: zIndex of polygons. What's the zIndex of a line (currently unimplemented).
 #       Problem here is that currently all polygon pixels share the very same zIndex. How
 #       ever the zIndex changes within the polygon. Need a per pixel zIndex calculus
 # TODO: Camera x,y,z should actually also be in parent scale (not [-1;1])
-# NOTE: Naming convention: always use named parameters instead of something like
-#       point=(x,y,z). Easier for GUI (edit objects) and YAML
+# TODO: Normalvector calculus fails again
+# TODO: change globals() in eval()! Security.
 
 # Main TODO:
 # - z-Index problems, z-fighting (example: cube.yaml)
@@ -536,7 +540,7 @@ class Miniverse(VectorMath, Debug):
 
 class Singulersum(Miniverse):
 
-    version = 0.1
+    version = "2021-04-02"
 
     # the whole universe is (-1,-1,-1) to (1,1,1) how ever a scale can be used
     # this only changes Functions and Objects, not Cameras and Lights!
@@ -554,6 +558,9 @@ class Singulersum(Miniverse):
             self.callback = args["callback"]
         else:
             self.callback = lambda event, **args: None
+
+        # callback of SingulersumYaml if version check fails.
+        self.versionOk              = True
 
         self.showCoordinateSystem   = True
         self.showCenterOfView       = True
@@ -776,7 +783,11 @@ class Singulersum(Miniverse):
         return True
 
     def quit(self):
+        self.debug("quitting Singulersum. Singulersum version: "+str(self.getVersion())+", Singulersum-YAML version: "+str(SingulersumYaml.version))
         super().quit()
+
+    def getVersion(self):
+        return Singulersum.version
 
 """
     class Light()

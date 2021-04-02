@@ -231,7 +231,7 @@ class SingulersumGUI(Tk):
     def createWidgets(self):
         self.resizable( height=True, width=True )
         self.geometry( "{:d}x{:d}".format(self.width, self.height) )
-        self.title("Singulersum V{:0.1f}".format(Singulersum.version))
+        self.title("Singulersum V{:s}".format(Singulersum.version))
 
         # to minimize on close
         #self.protocol("WM_DELETE_WINDOW", self.iconify)

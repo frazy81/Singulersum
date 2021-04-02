@@ -1,4 +1,5 @@
 # 2021-03-22 ph Created
+# 2021-04-02 ph version check for Singulersum and SingulersumYaml
 
 """
     class Singulersum.SingulersumYaml()
@@ -6,6 +7,12 @@
     2021-03-22 ph Created by Philipp Hasenfratz
 
     an importer for yaml based Singulersum scenery definition files.
+
+    all yaml files should start with:
+    yaml:
+        application: Singulersum
+        min-version: <singulersum-version-it's-made-for>
+        min-yaml-specification: <yaml-class-version-it's-made-for>
 
     NOTE: callback event's are fired from Singulersum.py (when sg.yaml() is called)
 """
@@ -21,13 +28,15 @@ from Singulersum.Debug import Debug
 
 class SingulersumYaml(Debug):
 
+    version = "2021-04-02"
+
     def __init__(self, parent, file=None, data=None):
         super().__init__()
         self.file = file
         self.data = data
         self.parent = parent
-        self.namespace = { "sg":parent, "gui":{} }
-        self.document = self.read(file=file, data=data)
+        self.namespace = { "yaml":{}, "sg":parent, "gui":{} }
+        self.read(file=file, data=data)
 
     def read(self, file=None, data=None):
         content = None
@@ -38,11 +47,18 @@ class SingulersumYaml(Debug):
         if data is not None:
             content = data
         if content is None:
-            self.debug("SingulversumYaml() did not content. file or data parameter missing or file empty?")
+            self.debug("SingulversumYaml() did not get any content. file or data parameter missing or file empty?")
             exit(0)
         self.document = yaml.load(content, Loader=yaml.FullLoader)
         self.namespace["gui"]=self.document.pop("gui", None)
+        if "gui" in self.namespace and self.namespace["gui"] is not None:
+            self.namespaceSet(["gui", "versionOk"], True)
+        self.namespace["yaml"]=self.document.pop("yaml", None)
+        if self.checkVersion() is False:
+            if "gui" in self.namespace and self.namespace["gui"] is not None:
+                self.namespaceSet(["gui", "versionOk"], False)
         self.singulersum_build([], self.parent, self.document)
+        self.debug("yaml file processed and objects initialized.")
         if file is not None:
             file_h.close()
         return self.namespace
@@ -200,3 +216,31 @@ class SingulersumYaml(Debug):
             container[name[-1]] = value
         else:
             setattr(container, name[-1], value)
+
+    def getVersion(self):
+        return SingulersumYaml.version
+
+    def checkVersion(self):
+        ok=True
+        if "yaml" not in self.namespace or self.namespace["yaml"] is None:
+            return True
+        yaml = self.namespace["yaml"]
+        if "min-yaml-version" in yaml:
+            fileversion = str(yaml["min-yaml-version"])
+            if fileversion>self.getVersion():
+                self.debug("WARN: yaml file needs SingulersumYaml class to be at least "+fileversion+", but class is version "+self.getVersion())
+                ok=False
+        else:
+            self.debug("INFO: yaml file does not have a min-yaml-version identifier.")
+        if "min-version" in yaml:
+            fileversion = str(yaml["min-version"])
+            if fileversion>self.parent.getVersion():
+                self.debug("WARN: yaml-file is made for a newer version of Singulersum! Class needs to be at least "+fileversion+", but class is version "+self.getVersion())
+                ok=False
+        else:
+            self.debug("INFO: yaml file does not have a min-version identifier.")
+        if "application" in yaml:
+            if yaml["application"].lower()!="singulersum":
+                self.debug("WARNING: is this yaml made for Singulersum? There's no application identifier in yaml")
+
+        return ok

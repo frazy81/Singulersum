@@ -4,6 +4,7 @@
 # 2021-03-24 ph up to date with current SingulersumYaml
 # 2021-04-01 ph Function x,y,z => fx, fy, fz
 # 2021-04-02 ph scale is float (before: tuple)
+# 2021-04-02 ph version check for Singulersum and SingulersumYaml
 
 """
     yaml.py
@@ -25,12 +26,18 @@ class Tests(unittest.TestCase):
 
     def callback(self, event, **args):
         if event=="set":
+            print("callback got: "+str(args["name"])+"="+str(args["value"]))
             setattr(self, args["name"], args["value"])
 
     def test_001(self):
         print("test_001:")
         sg = Singulersum(1.0)
         test = """
+yaml:
+    application: Singulersum
+    url: https://github.com/frazy81/Singulersum
+    min-version: 2021-04-02
+    min-yaml-version: 2021-04-02
 sg:
     scale: 5.0
 animator:
@@ -176,6 +183,56 @@ p1:
 
         print("test_005 end.")
         print()
+
+    def test_006(self):
+        print("test_006:")
+        sg = Singulersum(1.0, callback=self.callback)
+        file = "../yaml/singulersum.yaml"
+
+        data = sg.yaml(file=file)
+
+        print("test_006 end.")
+        print()
+
+    def test_007(self):
+        print("test_007:")
+        sg = Singulersum(1.0, callback=self.callback)
+
+        self.versionOk = True
+        self.testing = False
+
+        test = """
+yaml:
+    application: Singulersum
+    url: https://github.com/frazy81/Singulersum
+    min-version: 9999-12-31
+    min-yaml-version: 9999-12-31
+gui:
+    testing: True
+sg:
+    scale: 5.0
+animator:
+    type: animation
+    stop: 1.0
+    start: 0.0
+    camera: cam
+    begin: [1.2, 2.0, 1.0]
+    end: [1.6, 0.1, 0.5]
+    x: begin[0] + (time*(end[0] - begin[0]))
+    y: begin[1] + (time*(end[1] - begin[1]))
+    z: begin[2] + (time*(end[2] - begin[2]))
+        """
+        sg.yaml(data=test)
+
+        self.assertFalse(self.versionOk)
+        self.assertTrue(self.testing)
+
+        self.assertEqual(sg.scale, 5.0)
+
+        print("test_007 end.")
+        print()
+
+        pass
 
 def main():
     unittest.main()

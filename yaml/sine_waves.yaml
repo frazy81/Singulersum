@@ -3,6 +3,11 @@
 # 2021-04-01 ph sin(x)+sin(y) => sin(x+3*time)+sin(y+3*time)
 # 2021-04-02 ph scale is float (before: tuple)
 
+yaml:
+    application: Singulersum
+    url: https://github.com/frazy81/Singulersum
+    min-version: 2021-04-02
+    min-yaml-version: 2021-04-02
 gui:
     animated: True
     camera: cam1
