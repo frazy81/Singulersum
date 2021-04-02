@@ -1,10 +1,11 @@
 # 2021-03-27 ph Created
+# 2021-04-02 ph scale is float (before: tuple)
 
 gui:
     animated: False
     camera: cam1
 sg:
-    scale: [5.0, 5.0, 5.0]
+    scale: 5.0
     showBackside: False
     stop: 12.0
 cs:
@@ -31,6 +32,7 @@ universe_sphere:
     alpha: 100
     fill: [0, 0, 255]
     stroke: [0, 0, 255]
+    size: 5.0
 camera_show:
     type: cube
     x: 0.8713
@@ -48,8 +50,10 @@ tangential_plane_e:
     v2x: 0
     v2y: 0
     v2z: 1
-    size: 2.0
-    place: [-1, 0, 0]
+    size: 5.0
+    x: -5.0
+    y: 0.0
+    z: 0.0
     alpha: 150
     fill: white
     stroke: white

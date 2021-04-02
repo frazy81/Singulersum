@@ -3,6 +3,7 @@
 # 2021-03-23 ph Created
 # 2021-03-24 ph up to date with current SingulersumYaml
 # 2021-04-01 ph Function x,y,z => fx, fy, fz
+# 2021-04-02 ph scale is float (before: tuple)
 
 """
     yaml.py
@@ -28,10 +29,10 @@ class Tests(unittest.TestCase):
 
     def test_001(self):
         print("test_001:")
-        sg = Singulersum(1.0, 1.0, 1.0)
+        sg = Singulersum(1.0)
         test = """
 sg:
-    scale: [25.0, 20.0, 15.0]
+    scale: 5.0
 animator:
     type: animation
     stop: 1.0
@@ -45,9 +46,7 @@ animator:
         """
         sg.yaml(data=test)
 
-        self.assertEqual(sg.scale[0], 25)
-        self.assertEqual(sg.scale[1], 20)
-        self.assertEqual(sg.scale[2], 15)
+        self.assertEqual(sg.scale, 5.0)
 
         print("test_001 end.")
         print()
@@ -56,12 +55,12 @@ animator:
 
     def test_002(self):
         print("test_002:")
-        sg = Singulersum(1.0, 1.0, 1.0, callback=self.callback)
+        sg = Singulersum(1.0, callback=self.callback)
         test = """
 gui:
     isPlaying: True
 sg:
-    scale: [5.0, 5.0, 5.0]
+    scale: 5.0
     stop: 1.0
 animator:
     type: animation
@@ -84,7 +83,7 @@ f1:
     fy: y
     fz: sin(x)+sin(y)
     rel: z
-    scale: [5.0, 5.0, 5.0]
+    scale: 5.0
     size: 2.0
 f2:
     type: function
@@ -93,7 +92,7 @@ f2:
     fy: y
     fz: sin(x)+sin(y)
     rel: z
-    scale: [5.0, 5.0, 5.0]
+    scale: 5.0
     size: 2.0
 p1:
     type: point
@@ -105,9 +104,7 @@ p1:
 
         print(data)
 
-        self.assertEqual(sg.scale[0], 5)
-        self.assertEqual(sg.scale[1], 5)
-        self.assertEqual(sg.scale[2], 5)
+        self.assertEqual(sg.scale, 5)
 
         self.assertEqual(sg.cameras["cam"].x, 1)
         self.assertEqual(sg.cameras["cam"].y, 0.1)
@@ -137,7 +134,7 @@ p1:
 
     def test_003(self):
         print("test_003:")
-        sg = Singulersum(1.0, 1.0, 1.0, callback=self.callback)
+        sg = Singulersum(1.0, callback=self.callback)
         file = "../yaml/sine_waves.yaml"
 
         self.animated=False
@@ -151,7 +148,7 @@ p1:
 
     def test_004(self):
         print("test_004:")
-        sg = Singulersum(1.0, 1.0, 1.0, callback=self.callback)
+        sg = Singulersum(1.0, callback=self.callback)
         file = "../yaml/tiny_house.yaml"
 
         self.animated=False
@@ -163,6 +160,21 @@ p1:
         self.assertEqual(self.animated, True)
         self.assertEqual(self.camera, "cam1")
         print("test_004 end.")
+        print()
+
+    def test_005(self):
+        print("test_005:")
+        sg = Singulersum(1.0, callback=self.callback)
+        file = "../yaml/singulersum.yaml"
+
+        data = sg.yaml(file=file)
+
+        self.assertEqual(sg.scale, 5.0)
+
+        print("tangential_plane_e.x:", sg.objects["tangential_plane_e"].x)
+        self.assertEqual(sg.objects["tangential_plane_e"].x, -1.0)
+
+        print("test_005 end.")
         print()
 
 def main():

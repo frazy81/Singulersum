@@ -1,10 +1,11 @@
 # 2021-03-24 ph Created
+# 2021-04-02 ph scale is float (before: tuple)
 
 gui:
     animated: False
     camera: cam1
 sg:
-    scale: [5.0, 5.0, 5.0]
+    scale: 5.0
     showBackside: True
     showOnlyBoundingBox: False
     stop: 12
@@ -20,26 +21,24 @@ lighttest:
     # "vertical-up" oriented normalvector
     points: [
         [0, 0, 0],
-        [0, 1, 0],
-        [0, 1, 1],
-        [0, 0, 1]
+        [0, 2, 0],
+        [0, 2, 2],
+        [0, 0, 2]
     ]
-    place: [0.0, 0.0, 0.0]
-    size: 0.4
+    # polygons don't have size/place! They are imported into the parent (singulersum)
+    # context.
 lighttest2:
     type: polygon
     # right handed coordinate system. Points must go "counter clock wise" to generate a
     # "vertical-up" oriented normalvector
     points: [
         [0, 0, 0],
-        [1, 0, 0],
-        [1, 1, 0],
-        [0, 1, 0],
+        [2, 0, 0],
+        [2, 2, 0],
+        [0, 2, 0],
     ]
-    place: [0.0, 0.0, 0.0]
-    size: 0.4
 dot:
-    type: point
-    x: 0.0
-    y: 0.7
-    z: 0.1
+    type: dot
+    x: 0.5
+    y: 3.5
+    z: 0.5

@@ -1,10 +1,11 @@
 # 2021-03-24 ph Created
+# 2021-04-02 ph scale is float (before: tuple)
 
 gui:
     animated: True
     camera: cam1
 sg:
-    scale: [5.0, 5.0, 5.0]
+    scale: 5.0
     showBackside: True
     stop: 12
 cs:
@@ -28,21 +29,17 @@ lighttest:
     # "vertical-up" oriented normalvector
     points: [
         [0, 0, 0],
-        [0, 1, 0],
-        [0, 1, 1],
-        [0, 0, 1]
+        [0, 2, 0],
+        [0, 2, 2],
+        [0, 0, 2]
     ]
-    place: [0.0, 0.0, 0.0]
-    size: 0.4
 lighttest2:
     type: polygon
     # right handed coordinate system. Points must go "counter clock wise" to generate a
     # "vertical-up" oriented normalvector
     points: [
         [0, 0, 0],
-        [1, 0, 0],
-        [1, 1, 0],
-        [0, 1, 0],
+        [2, 0, 0],
+        [2, 2, 0],
+        [0, 2, 0],
     ]
-    place: [0.0, 0.0, 0.0]
-    size: 0.4

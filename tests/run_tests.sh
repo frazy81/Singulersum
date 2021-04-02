@@ -2,14 +2,12 @@
 
 # 2021-03-26 ph Created
 
-"""
-    run_tests.sh
-
-    2021-03-26 Created by Philipp Hasenfratz
-
-    runs all tests in /tests. ALL TESTS SUCCESSFUL! at the end means that all tests passed, script ends with exit-code 0. Otherwise a warning is shown and this scripts ends with exit-code 1.
-
-"""
+# run_tests.sh
+# 2021-03-26 Created by Philipp Hasenfratz
+#
+# runs all tests in /tests. ALL TESTS SUCCESSFUL! at the end means that all tests
+# passed, script ends with exit-code 0. Otherwise a warning is shown and this scripts
+# ends with exit-code 1.
 
 regex="^unittest_(.*?)\.py$"
 count=0

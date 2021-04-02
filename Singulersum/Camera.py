@@ -302,7 +302,6 @@ class Camera(Miniverse):
                 self.setupCamera()
 
         self.draw2d.clear()
-        scale = self.parent.scale
 
         poly_total  = 0
         poly_hidden = 0
@@ -323,7 +322,7 @@ class Camera(Miniverse):
         step2timeit = self.timeit()
         for i in range(len(sgdots)):
             dot = [
-                [ dotssg[i][0][0], sgdots[i][0][1], sgdots[i][0][2] ],    # 3D coordinates
+                [ sgdots[i][0][0], sgdots[i][0][1], sgdots[i][0][2] ],    # 3D coordinates
                 sgdots[i][1]  # color
             ]
             dot[0] = self.project_p2d(dot[0])

@@ -1,11 +1,12 @@
 # 2021-03-24 ph Created
 # 2021-03-26 ph resized (bigger)
+# 2021-04-02 ph scale is float (before: tuple)
 
 gui:
     animated: True
     camera: cam1
 sg:
-    scale: [5.0, 5.0, 5.0]
+    scale: 5.0
     showBackside: False       # False for video, True for GUI to test z-Index Problems.
     stop: 12.0
 cs:
@@ -39,5 +40,4 @@ cube:
     y: 0
     z: 0
     r: 1.0
-    size: 0.4
-default: cam
+    size: 2.0

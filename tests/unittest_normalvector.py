@@ -23,7 +23,7 @@ class Tests(unittest.TestCase):
     def test_001(self):
         sg = Singulersum()
         cam = sg.camera(1, 0, 0, 0, 0, 0, name="cam1")
-        cube = sg.cube("test", 0,0,0,1)
+        cube = sg.cube("test", r=1.0)
         self.assertTrue("top1" in cube.objects)
         top = cube.objects["top1"]
         self.assertTrue(top)

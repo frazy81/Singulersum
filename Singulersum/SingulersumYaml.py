@@ -79,14 +79,82 @@ class SingulersumYaml(Debug):
             # update for all Miniverse objects (including Camera)
             namespace["update"]=self.namespace[update]
 
+        # simple objects (inherit from BasicObject, don't have scale/size/x/y/z)
+        # simple objects are directly imported into the parent context! So their
+        # point definitions (like x,y,z for Dot or x1,y1,z1,x2,y2,z2 for Line) are in
+        # scale of their parent context!
         if objtype=="dot":
             point = namespace.pop("point", None)
             if point is not None:
                 namespace["x"] = point[0]
                 namespace["y"] = point[1]
                 namespace["z"] = point[2]
-            obj = parent.object(**namespace)
-            obj=obj.dot( **namespace)
+            obj=parent.dot( **namespace)
+
+        elif objtype=="polygon":
+            polygon = namespace.pop("points", None)
+            obj = parent.polygon(*polygon, **namespace)
+
+        elif objtype=="lines":
+            """
+            type: lines
+            points: [ [0,0,0], [1,0,0], [1,1,0], [1,1,1] ]
+            #OR
+            lines: [ [0,0,0], [1,0,0], [1,0,0], [1,1,0], [1,1,0], [1,1,1] ]
+            """
+            lines = namespace.pop("lines", None)
+            points = namespace.pop("points", None)
+            if lines is not None:
+                for i in range(0, len(lines), 2):
+                    obj = parent.line(*lines[i], *lines[i+1])
+            if points is not None:
+                p0 = points[0]
+                pl = p0
+                for i in range(1, len(points)-1):
+                    obj = parent.line(*pl, *points[i])
+                    pl=points[i]
+                obj=parent.line(*points[-1], *pl)
+
+        elif objtype=="coordinatesystem":
+            obj = parent.coordinateSystem(**namespace)
+
+        # Miniversum objects (they have their own scale and are translated by x,y,z into
+        # the parent context. They also have a "size" which is then scaled to the parent
+        # into the parent context; this means: if parent scaleX/Y/Z=5.0 and the object
+        # here is created with a scale: 3.0, then it covers 3/5 of the space of the
+        # parent)
+
+        elif objtype=="stl":
+            """
+            type: stl
+            file: ../stl/Utah_teapot.stl
+            place: [-1.0, -1.0, 0]
+            """
+            file = namespace.pop("file", None)
+            if file is None:
+                self.debug("stl needs at least 'file'!")
+                exit(0)
+            obj=parent.stl(file=file, **namespace)
+
+        elif objtype=="function":
+            obj=parent.function(**namespace)
+
+        elif objtype=="object":
+            obj=parent.object(**namespace)
+
+        elif objtype=="cube":
+            obj = parent.cube(**namespace)
+
+        elif objtype=="sphere":
+            obj = parent.sphere(**namespace)
+
+        elif objtype=="point":
+            obj = parent.point(**namespace)
+
+        elif objtype=="plane":
+            obj = parent.plane(**namespace)
+
+        # camera and animations:
 
         elif objtype=="camera":
             position = namespace.pop("position", None)
@@ -111,66 +179,6 @@ class SingulersumYaml(Debug):
                 z: begin[2] + (time*(end[2] - begin[2]))
             """
             obj=lambda animate_object: animate_object.animation(**namespace)
-
-        elif objtype=="stl":
-            """
-            type: stl
-            file: ../stl/Utah_teapot.stl
-            place: [-1.0, -1.0, 0]
-            """
-            file = namespace.pop("file", None)
-            if file is None:
-                self.debug("stl needs at least 'file'!")
-                exit(0)
-            obj=parent.stl(file=file, **namespace)
-
-        elif objtype=="lines":
-            """
-            type: lines
-            points: [ [0,0,0], [1,0,0], [1,1,0], [1,1,1] ]
-            #OR
-            lines: [ [0,0,0], [1,0,0], [1,0,0], [1,1,0], [1,1,0], [1,1,1] ]
-            """
-            lines = namespace.pop("lines", None)
-            points = namespace.pop("points", None)
-            obj = parent.object(**namespace)
-            if lines is not None:
-                for i in range(0, len(lines), 2):
-                    obj.line(*lines[i], *lines[i+1])
-            if points is not None:
-                p0 = points[0]
-                pl = p0
-                for i in range(1, len(points)-1):
-                    obj.line(*pl, *points[i])
-                    pl=points[i]
-                obj.line(*points[-1], *pl)
-
-        elif objtype=="function":
-            obj=parent.function(**namespace)
-
-        elif objtype=="object":
-            obj=parent.object(**namespace)
-
-        elif objtype=="cube":
-            obj = parent.cube(**namespace)
-
-        elif objtype=="sphere":
-            obj = parent.sphere(**namespace)
-
-        elif objtype=="point":
-            obj = parent.point(**namespace)
-
-        elif objtype=="plane":
-            print(namespace)
-            obj = parent.plane(**namespace)
-
-        elif objtype=="polygon":
-            polygon = namespace.pop("points", None)
-            obj = parent.object(**namespace)
-            obj = obj.polygon(*polygon, **namespace)
-
-        elif objtype=="coordinatesystem":
-            obj = parent.coordinateSystem(**namespace)
 
         else:
             self.debug("SingulversumYaml() got object type "+str(objtype)+" which it can't handle. Must be one of ['stl', 'animation', 'camera', 'point']")

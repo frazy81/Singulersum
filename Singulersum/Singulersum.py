@@ -39,6 +39,8 @@
 # 2021-04-01 ph Camera now part of Miniverse instead of Singulersum
 # 2021-04-01 ph Function class: time as variable so that func. may depend on time
 # 2021-04-01 ph faster polygon_fill (using points()) in Draw2D
+# 2021-04-01 ph Singulersum subobject hierarchy fixes (positions, sizes)
+# 2021-04-02 ph scale is float (not tuple, one value for each axis anymore)
 
 """
     class Singulersum.Singulersum()
@@ -47,7 +49,7 @@
 
     Singulersum() is the "universe" of Singulersum where all 3D objects are placed in.
 
-    sg = Singulersum(scale=(5.0, 5.0, 5.0))
+    sg = Singulersum(scale=5.0)
     sg.logfile("./singulersum.log")                 # debugging
 
     # make a camera to look at the scene:
@@ -55,7 +57,7 @@
     sg.coordinateSystem()                           # show initial reference coord-system
 
     # define objects
-    obj1 = sg.function(x="x", y="y", z="sin(x)+sin(y)", scale=(5.0, 5.0, 5.0), size=2.0)
+    obj1 = sg.function(x="x", y="y", z="sin(x)+sin(y)", scale=5.0, size=2.0)
     obj2 = sg.fromSTL("./STLs/Sphericon-ascii.stl")
 
     sg.update()             # update the scene/singulersum
@@ -74,8 +76,6 @@
 # TODO: zIndex of polygons. What's the zIndex of a line (currently unimplemented).
 #       Problem here is that currently all polygon pixels share the very same zIndex. How
 #       ever the zIndex changes within the polygon. Need a per pixel zIndex calculus
-# TODO: tiny_house.yaml: size=2.0 stuff get out of universe, but should not. Rescale into
-#       parent scale context wrong I assume. Need to check where and how I did that.
 # NOTE: Naming convention: always use named parameters instead of something like
 #       point=(x,y,z). Easier for GUI (edit objects) and YAML
 
@@ -90,7 +90,7 @@
 #   rotate, translate and resize other Miniverses (such as Function() or Sphere()) into
 #   Singulersum)
 # - Maybe don't use polys at all, use a SurroundingPoly only.
-# - Game and Mobile version of Singulversum
+# - Game and Mobile version of Singulersum
 # - singulersum_video scenery.yaml -fps 30 scenery.mp4
 # - singulersum_animatedgif scenery.yaml -fps 30 scenery.gif
 # - singulersum_jpg scenery.yaml -time 0:20.5 -cam 1.0x0.1x0.3x0x0x0 scenery_20_5.jpg
@@ -134,8 +134,9 @@ class Miniverse(VectorMath, Debug):
             self.sg = parent
         else:
             self.sg=parent.sg
+        self.name      = "AnonymousObject"
         self.startTime = time.time()
-        self.scale     = (1.0, 1.0, 1.0)
+        self.scale     = 1.0
         self.x         = 0.0
         self.y         = 0.0
         self.z         = 0.0
@@ -143,30 +144,34 @@ class Miniverse(VectorMath, Debug):
         self.azimuth   = 0.0
         self.altitude  = 0.0
         self.roll      = 0.0
+        self.fill      = "white"
+        self.stroke    = None
+        self.alpha     = 0
+        self.visibility= True
         self.object_count = 0
         self.objects   = {}
         self.cameras   = {}
         self.lights    = {}
         self.id        = ""
-        self.name      = None
-        self.visibility = True
         self.updateFunction = None
-        if "x" in args:
-            self.x = args["x"]
-        if "y" in args:
-            self.y = args["y"]
-        if "z" in args:
-            self.z = args["z"]
         if "update" in args:
             self.debug("set update function")
             self.setUpdate(args["update"])
-        if "visibility" in args:
-            self.visibility = args["visibility"]
-        self.name = "AnonymousObject"
-        auto_fill = ["name", "scale", "size", "place", "azimuth", "altitude", "roll", "fill", "stroke", "alpha"]
+        if "name" in args:
+            self.name = args["name"]
+        auto_fill = ["name", "x", "y", "z", "scale", "size", "azimuth", "altitude", "roll", "fill", "stroke", "alpha", "visibility"]
+        self.debug("initialize new object "+str(self))
         for name in auto_fill:
             if name in args and hasattr(self, name):
-                self.debug("auto fill "+name+" with "+str(args[name]))
+                if name is "size":
+                    args["size"] = float(args["size"])/self.parent.scale
+                if name is "x":
+                    args["x"] = float(args["x"])/self.parent.scale
+                if name is "y":
+                    args["y"] = float(args["y"])/self.parent.scale
+                if name is "z":
+                    args["z"] = float(args["z"])/self.parent.scale
+                self.debug(" * set "+name+" with "+str(args[name]))
                 setattr(self, name, args[name])
 
     def reset(self):
@@ -302,7 +307,7 @@ class Miniverse(VectorMath, Debug):
             max=maxY
         if maxZ>max:
             max=maxZ
-        anonymousObject.scale = (max, max, max)
+        anonymousObject.scale = max
         polys = stl.getPolygons()
         norms = stl.getNormalvectors()
         for i in range(0, len(polys)):
@@ -472,15 +477,15 @@ class Miniverse(VectorMath, Debug):
     # NOTE: the camera induced rotation/translation is done directly in project_p2d()
     def applyContext(self, context, *kwargs, **args):
         list = []
-        size = context["size"]
+        size = float(context["size"])
+        translate = (float(context["x"]), float(context["y"]), float(context["z"]))
         for p in kwargs:
-            if size!=1.0:
-                p = self.stretch(p, size, size, size)
+            p = self.stretch(p, size, size, size)
             p = self.rotate(p, context["azimuth"])
             p = self.rotate(p, 0.0, context["altitude"])
             p = self.rotate(p, 0.0, 0.0, context["roll"])
             # translate to place
-            p = self.vec_add(p, (context["x"], context["y"], context["z"]))
+            p = self.vec_add(p, translate)
             list.append(p)
         return list
 
@@ -519,17 +524,12 @@ class Singulersum(Miniverse):
     # the whole universe is (-1,-1,-1) to (1,1,1) how ever a scale can be used
     # this only changes Functions and Objects, not Cameras and Lights!
 
-    # total number of dimensions: 5 (x, y, z, 4thDim_T, 5thDim_U), t and u can be what
-    # they want. Usually interpreted as colors(t) and illuminessence (u)
-    # the dimension t has nothing to do with the time used to process functions/objects
-    # movements.    # TODO: this is not implemented.
-
     def __init__(self, *kwargs, **args):
         super().__init__(self, *kwargs, **args)
         self.fps       = 0
         self.timing    = "fix"  # rt=realtime or fix
         self.timingFps = 30     # for timing=fix, choose framerate
-        self.time      = 0.0    # relative time in Singulversum
+        self.time      = 0.0    # relative time in Singulersum
         self.zBuffering= True   # hide polygons in background
 
         if "callback" in args:
@@ -623,15 +623,26 @@ class Singulersum(Miniverse):
         polys = []
         lines = []  # [ (p1, p2, color), ... ]
         dots  = []  # [ (p1, color), ...]
-        context = {
-            "x"       : versum.x,
-            "y"       : versum.y,
-            "z"       : versum.z,
-            "size"    : versum.size,
-            "azimuth" : versum.azimuth,
-            "altitude": versum.altitude,
-            "roll"    : versum.roll,
-        }
+        if isinstance(versum, Singulersum):
+            context = {
+                "x"         : 0,
+                "y"         : 0,
+                "z"         : 0,
+                "size"      : 1.0,
+                "azimuth"   : 0.0,
+                "altitude"  : 0.0,
+                "roll"      : 0.0
+            }
+        else:
+            context = {
+                "x"       : versum.x,
+                "y"       : versum.y,
+                "z"       : versum.z,
+                "size"    : versum.size,
+                "azimuth" : versum.azimuth,
+                "altitude": versum.altitude,
+                "roll"    : versum.roll,
+            }
         isSpecialContext = self.isSpecialContext(context)
 
         for name, obj in versum.objects.items():
@@ -685,9 +696,6 @@ class Singulersum(Miniverse):
                 for l in nlines:
                     (p1, p2, color, thickness) = l
                     if isSpecialContext:
-                        # TODO: does the list expansion work here? Or do I need indexing?
-                        # maybe I need: ps = self.applyContext...
-                        # p1 = ps[0]; p2 = ps[1]; !!! Seems to work I see grid when rotate
                         (p1, p2) = self.applyContext(context, p1, p2)
                     lines.append( [p1, p2, color, thickness] )
                 for p in npolys:
@@ -736,6 +744,11 @@ class Singulersum(Miniverse):
     def quit(self):
         super().quit()
 
+"""
+    class Light()
+
+    not implemented!
+"""
 class Light():
 
     def __init__(self, sg, x=.5, y=.5, z=1.0, type="parallel", intensity=1.0):
@@ -764,7 +777,7 @@ class BasicObject(Debug):
             self.name = args["name"]
         if issubclass(type(parent).__class__, Miniverse):
             self.debug("BasicObject parent must be either Miniverse or Singulersum, not", type(parent))
-            raise ObjectError       # TODO
+            raise ObjectError
         self.parent=parent
 
     def update(self):
@@ -777,11 +790,8 @@ class Object(Miniverse):
 
         x, y, z is where the object will be placed into the parent context
     """
-    def __init__(self, parent, x=0.0, y=0.0, z=0.0, *kwargs, **args):
+    def __init__(self, parent, *kwargs, **args):
         super().__init__(parent, *kwargs, **args)
-        self.x = x
-        self.y = y
-        self.z = z
 
 # some basic drawers
 
@@ -798,21 +808,22 @@ class Line(BasicObject):
             self.thickness=args["thickness"]
         else:
             self.thickness=1
-        self.x1=x1/scale[0]
-        self.y1=y1/scale[1]
-        self.z1=z1/scale[2]
-        self.x2=x2/scale[0]
-        self.y2=y2/scale[1]
-        self.z2=z2/scale[2]
+        self.x1=x1/scale
+        self.y1=y1/scale
+        self.z1=z1/scale
+        self.x2=x2/scale
+        self.y2=y2/scale
+        self.z2=z2/scale
 
 class Dot(BasicObject):
 
     # singulersum_gui.py requires explicit parameters x, y, z. Easier this way.
     def __init__(self, parent, x=0.0, y=0.0, z=0.0, *kwargs, **args):
         super().__init__(parent)
-        self.x = x
-        self.y = y
-        self.z = z
+        scale = self.parent.scale
+        self.x = x/scale
+        self.y = y/scale
+        self.z = x/scale
         if "color" in args:
             self.color=args["color"]
         else:
@@ -823,16 +834,16 @@ class Polygon(BasicObject, VectorMath):
     vec = None
 
     def __init__(self, sg, *kwargs, normalvector=None, fill="white", stroke=None, alpha=0, **args):
-        self.fill=fill
-        self.stroke=stroke
-        self.alpha=alpha
+        self.fill = fill
+        self.stroke = stroke
+        self.alpha = alpha
         super().__init__(sg, **args)
         VectorMath.__init__(self)
         self.normalvector = normalvector        # normal vector of the poly
-        scale = sg.scale
+        scale = self.parent.scale
         self.points = []
         for point in kwargs:
-            self.points.append( (point[0]/scale[0], point[1]/scale[1], point[2]/scale[2] ))
+            self.points.append( (point[0]/scale, point[1]/scale, point[2]/scale ))
         if normalvector is not None:
             return None # __init__ shall return None, but all ok.
 
@@ -846,14 +857,11 @@ class Polygon(BasicObject, VectorMath):
 
 class Function(Object):
 
-    def __init__(self, parent, fx="x", fy="y", fz="z", rel=None, amount=20, alpha=0, fill="white", stroke=None, *kwargs, **args):
+    def __init__(self, parent, fx="x", fy="y", fz="z", rel=None, amount=20, *kwargs, **args):
         self.amount=amount
         self.rel=rel
-        self.alpha=alpha
         # if function uses parameter time, it must be recalculated for each new "time"
         self.dependsOnTime = False
-        self.fill = fill
-        self.stroke = stroke
         self.fx=fx
         self.fy=fy
         self.fz=fz
@@ -915,16 +923,16 @@ class Function(Object):
             for j in range(0, amount):
                 p = ()
                 if self.rel==2:
-                    nx=(float(i)/amount*2.0-1.0)*self.scale[0]
-                    ny=(float(j)/amount*2.0-1.0)*self.scale[1]
+                    nx=(float(i)/amount*2.0-1.0)*self.scale
+                    ny=(float(j)/amount*2.0-1.0)*self.scale
                     p = self.eval(nx,ny,0)
                 elif self.rel==0:
-                    ny=(float(i)/amount*2.0-1.0)*self.scale[1]
-                    nz=(float(j)/amount*2.0-1.0)*self.scale[2]
+                    ny=(float(i)/amount*2.0-1.0)*self.scale
+                    nz=(float(j)/amount*2.0-1.0)*self.scale
                     p = self.eval(0,ny,nz)
                 elif self.rel==1:
-                    nx=(float(i)/amount*2.0-1.0)*self.scale[0]
-                    nz=(float(j)/amount*2.0-1.0)*self.scale[2]
+                    nx=(float(i)/amount*2.0-1.0)*self.scale
+                    nz=(float(j)/amount*2.0-1.0)*self.scale
                     p = self.eval(nx,0,nz)
                 else:
                     self.debug("unsupported!")
@@ -949,15 +957,9 @@ class Function(Object):
 
 class Sphere(Object):
 
-    def __init__(self, parent, x=0.0, y=0.0, z=0.0, r=1.0, amount=20, alpha=0, *kwargs, **args):
-        self.alpha = alpha
-        self.fill = [255, 255, 255]
-        self.stroke = [255, 255, 255]
-        super().__init__(parent, x=x, y=y, z=z, *kwargs, **args)
+    def __init__(self, parent, r=1.0, amount=20, *kwargs, **args):
+        super().__init__(parent, *kwargs, **args)
         self.amount=amount
-        self.x = x
-        self.y = y
-        self.z = z
         self.r = r
         self.createPolygons()
 
@@ -994,13 +996,9 @@ class Sphere(Object):
 
 class Cube(Object):
 
-    def __init__(self, parent, x=0.0, y=0.0, z=0.0, r=1.0, alpha=0, *kwargs, **args):
+    def __init__(self, parent, r=1.0, *kwargs, **args):
         super().__init__(parent, *kwargs, **args)
-        self.x = x
-        self.y = y
-        self.z = z
         self.r = r
-        self.alpha = alpha
         self.createPolygons()
 
     def update(self):
@@ -1008,9 +1006,6 @@ class Cube(Object):
         return False
 
     def createPolygons(self):
-        x = self.x
-        y = self.y
-        z = self.z
         r = self.r
 
         # front
@@ -1045,18 +1040,12 @@ class Cube(Object):
 
 class Plane(Object):
 
-    def __init__(self, parent, x=0.0, y=0.0, z=0.0, v1x=0.0, v1y=1.0, v1z=0.0, v2x=0.0, v2y=0.0, v2z=1.0, amount=20, alpha=0, fill="white", stroke=None, *kwargs, **args):
+    def __init__(self, parent, v1x=0.0, v1y=1.0, v1z=0.0, v2x=0.0, v2y=0.0, v2z=1.0, amount=20, *kwargs, **args):
         # define plane as xf*x+yf*y+zf*z+df=0
         self.amount = amount
-        self.alpha = alpha
-        self.fill = fill
-        self.stroke = stroke
 
         super().__init__(parent, *kwargs, **args)
 
-        self.x = x
-        self.y = y
-        self.z = z
         self.v1x = v1x
         self.v1y = v1y
         self.v1z = v1z
@@ -1081,8 +1070,9 @@ class Plane(Object):
         for i in range(0,amount):
             for j in range(0, amount):
                 p = (0.0, 0.0, 0.0)
-                p = self.vec_add(p, self.vec_mul_scalar(v, i/amount) )
-                p = self.vec_add(p, self.vec_mul_scalar(s, j/amount) )
+                p = self.vec_add(p, self.vec_mul_scalar(v, float(i)/amount*2.0-1.0) )
+                p = self.vec_add(p, self.vec_mul_scalar(s, float(j)/amount*2.0-1.0) )
+                p = ( p[0]*self.scale, p[1]*self.scale, p[2]*self.scale )
                 corps[i][j] = p
         # make polis
         cnt=0
@@ -1097,18 +1087,10 @@ class Plane(Object):
 
 class Point(Object):
 
-    def __init__(self, parent, x=0.0, y=0.0, z=0.0, alpha=0, fill="white", stroke=None, *kwargs, **args):
-        self.alpha = alpha
-        self.fill = fill
-        self.stroke = stroke
-
+    def __init__(self, parent, *kwargs, **args):
         super().__init__(parent, *kwargs, **args)
 
-        self.x = x
-        self.y = y
-        self.z = z
-
-        self.sphere(0.0, 0.0, 0.0, r=self.scale[0]/200, fill=fill, stroke=None, amount=10)
+        self.sphere(r=self.scale/200, fill=self.fill, stroke=self.stroke, amount=10)
         pass
 
 class CoordinateSystem(BasicObject):
@@ -1119,9 +1101,9 @@ class CoordinateSystem(BasicObject):
     def __init__(self, parent, *kwargs, **args):
         super().__init__(parent, *kwargs, **args)
         scale = self.parent.scale
-        self.lineX = self.parent.line( 0.0, 0.0, 0.0, scale[0], 0, 0, color="green", thickness=1 )
-        self.lineY = self.parent.line( 0.0, 0.0, 0.0, 0, scale[1], 0, color="blue", thickness=1 )
-        self.lineZ = self.parent.line( 0.0, 0.0, 0.0, 0, 0, scale[2], color="red", thickness=1 )
+        self.lineX = self.parent.line( 0.0, 0.0, 0.0, scale, 0, 0, color="green", thickness=1 )
+        self.lineY = self.parent.line( 0.0, 0.0, 0.0, 0, scale, 0, color="blue", thickness=1 )
+        self.lineZ = self.parent.line( 0.0, 0.0, 0.0, 0, 0, scale, color="red", thickness=1 )
         points = None
         if "points" in args:
             points = args["points"]
@@ -1129,9 +1111,9 @@ class CoordinateSystem(BasicObject):
             for i in range(points):
                 for j in range(points):
                     for k in range(points):
-                        nx=(float(i)/points*2.0-1.0)*scale[0]
-                        ny=(float(j)/points*2.0-1.0)*scale[1]
-                        nz=(float(k)/points*2.0-1.0)*scale[2]
+                        nx=(float(i)/points*2.0-1.0)*scale
+                        ny=(float(j)/points*2.0-1.0)*scale
+                        nz=(float(k)/points*2.0-1.0)*scale
                         self.parent.dot( nx,ny,nz, color="red" )
 
 
@@ -1140,66 +1122,8 @@ class CoordinateSystem(BasicObject):
         changed = False
         if self.parent.showCoordinateSystem is True:
             # TODO: delete old lines first!
-            #sg.line( 0.0, 0.0, 0.0, scale[0], 0, 0, color="green", tickness=5 )
-            #sg.line( 0.0, 0.0, 0.0, 0, scale[1], 0, color="blue", thickness=5 )
-            #sg.line( 0.0, 0.0, 0.0, 0, 0, scale[2], color="red", thickness=5 )
+            #sg.line( 0.0, 0.0, 0.0, scale, 0, 0, color="green", tickness=5 )
+            #sg.line( 0.0, 0.0, 0.0, 0, scale, 0, color="blue", thickness=5 )
+            #sg.line( 0.0, 0.0, 0.0, 0, 0, scale, color="red", thickness=5 )
             changed = False
         return changed
-
-    # OLD IMAGE code that was part of Camera() class:
-    def oldimage(self):
-        time = self.sg.time
-        img = Image.new("RGBA", (self.width, self.height), (0,0,0))
-        draw = ImageDraw.Draw(img)
-        scale = self.sg.scale
-        # find azimuth and altitude angles of camera and derive rotationMatrix
-        rotationMatrix = (1, 0, 0, 0, 1, 0, 0, 0, 1)    # identity
-        # now the camera's rotated position C' is roughly at (x',0,0) and the Origin
-        # O' at (x'', 0, 0)
-        # make lambdas to calculate angles of each point P' (x'', y'', z'')->(x''', y''')
-
-        Px = lambda x, y, z: (x-self.x,y-self.y,0)
-        Py = lambda x, y, z: (x-self.x,0,z-self.z)
-        CO = lambda x: (x-self.x+.00000000001,0,0)    # Camera to Origin in plane of point
-        vec_length = lambda vec: abs( sqrt(vec[0]**2+vec[1]**2+vec[2]**2) )
-        # orient_x|y we need.
-        orient_x = lambda x,y,z: 1 if y>=0 else -1
-        orient_y = lambda x,y,z: 1 if z>=0 else -1
-        theta_x = lambda x,y,z: atan( vec_length(Px(x,y,z)) / vec_length(CO(x)) ) / pi*180 * orient_x(x,y,z)
-            # 0 if y==0 else
-        theta_y = lambda x,y,z: atan( vec_length(Py(x,y,z)) / vec_length(CO(x)) ) / pi*180 * orient_y(x,y,z)
-            # if z==0 else
-        # from theta_x/theta_y calculate the new P position on the 2D plane
-        x_three = lambda theta_x: theta_x/(self.fov/2)
-        y_three = lambda theta_y: theta_y/(self.fov/2)
-        scaling = lambda vec: ( vec[0]/scale[0], vec[1]/scale[1], vec[2]/scale[2] )
-        x_2D = lambda vector: x_three(theta_x(vector[0], vector[1], vector[2]))
-        y_2D = lambda vector: y_three(theta_y(vector[0], vector[1], vector[2]))
-        xy = lambda vector: (x_2D(scaling(vector))*self.width/2+self.width/2, -1*y_2D(scaling(vector))*self.height/2+self.height/2)
-        # y multiplies with -1, so that positive angles are up and negative angles down.
-
-        # debug calculus
-        p0 = (500, 1000, 0)
-        p = scaling(p0)
-        print("original point: "+str(p0))
-        print("scaled point:   "+str(p))
-        print("Px:             " + str( Px(p[0], p[1], p[2]) ))
-        print("Py:             " + str( Py(p[0], p[1], p[2]) ))
-        print("Cx:             " + str( self.x ) )
-        print("CO:             " + str( CO(p[0]) ))
-        print("|CO|:           " + str( vec_length(CO(p[0]))) )
-        print("theta_x:        " + str( theta_x(p[0],p[1],p[2]) ) )
-        print("theta_y:        " + str( theta_y(p[0],p[1],p[2]) ) )
-        print("FOV:            " + str( self.fov ) )
-        print("x_2D:           " + str( x_2D(p) ) )
-        print("y_2D:           " + str( y_2D(p) ) )
-        (x,y) = xy( p0 )        # p0 unscaled! xy() does the scaling!
-        print("x in 2D pic:    " + str(x) )
-        print("y in 2D pic:    " + str(y) )
-
-        print()
-        print("point series:")
-        for y in range(-1*scale[1], scale[1], int(scale[1]/10)):
-            p0 = (1000, 1000, y)
-            (xs,ys) = xy(p0)
-            print("p=({:d},{:d},{:d}), x'={:0.2f}, y'={:0.2f}, theta_y={:0.2f}".format(p0[0], p0[1], p0[2], xs, ys, theta_y(p0[0], p0[1], p0[2])))

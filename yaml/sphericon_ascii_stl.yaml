@@ -1,10 +1,11 @@
 # 2021-03-24 ph Created
+# 2021-04-02 ph scale is float (before: tuple)
 
 gui:
     animated: True
     camera: cam1
 sg:
-    scale: [5.0, 5.0, 5.0]
+    scale: 5.0
     zBuffer: False
     #polyOnlyGrid: True
     showBackside: False
