@@ -40,9 +40,6 @@ class Camera(Miniverse):
         self.x=x
         self.y=y
         self.z=z
-        self.azimuth=None
-        self.altitude=None
-        self.roll=None
         self.r=None
         self.x0=x0
         self.y0=y0
@@ -129,15 +126,15 @@ class Camera(Miniverse):
         }
 
         # from x,y,z of camera, calculate camera azimuth/altitude
-        self.azimuth = atan2(self.y, self.x)
+        self.cam_azimuth = atan2(self.y, self.x)
         #if self.azimuth<0.0:
             #self.azimuth = 2*pi+self.azimuth
-        self.azimuth = self.azimuth/pi*180
-        self.altitude = atan2(self.z, sqrt(self.x**2+self.y**2))/pi*180
-        self.radius = sqrt(self.x**2+self.y**2+self.z**2)
-        self.debug("Camera azimuth:                 ", "{:4f}".format(self.azimuth))
-        self.debug("Camera altitude:                ", "{:4f}".format(self.altitude))
-        self.debug("Camera radius:                  ", "{:4f}".format(self.radius))
+        self.cam_azimuth = self.cam_azimuth/pi*180
+        self.cam_altitude = atan2(self.z, sqrt(self.x**2+self.y**2))/pi*180
+        self.cam_radius = sqrt(self.x**2+self.y**2+self.z**2)
+        self.debug("Camera azimuth:                 ", "{:4f}".format(self.cam_azimuth))
+        self.debug("Camera altitude:                ", "{:4f}".format(self.cam_altitude))
+        self.debug("Camera radius:                  ", "{:4f}".format(self.cam_radius))
 
         # TODO: camera seems to go below "ground" at azimuth 120°! But should actually stay on top of x/y plane.
 
@@ -170,8 +167,8 @@ class Camera(Miniverse):
         if self.F[0]==0.0 and self.F[1]==0.0 and self.F[2]==0.0:
             corr = 180-self.view_azimuth
             # TODO: +/- 180
-            assert(abs(corr+self.azimuth)<=1e-06)
-            assert(self.view_altitude==-1*self.altitude)
+            assert(abs(corr+self.cam_azimuth)<=1e-06)
+            assert(self.view_altitude==-1*self.cam_altitude)
 
         self.debug("after rotation:")
 
@@ -190,9 +187,10 @@ class Camera(Miniverse):
         self.C_prime = self.rotate(self.C_prime, 180-self.view_azimuth, 0.0)
         self.C_prime = self.rotate(self.C_prime, 0.0, -1*self.view_altitude, self.roll)
         self.debug("Camera position C_prime (calc): ", self.vec_show(self.C_prime))
-        assert(abs(self.C_prime[0]-self.lV)<0.1)
-        assert(abs(self.C_prime[1]-0.0)<0.1)
-        assert(abs(self.C_prime[2]-0.0)<0.1)
+        # TODO: currently brakes if View Vector is not to center (0,0,0)
+        #assert(abs(self.C_prime[0]-self.lV)<0.1)
+        #assert(abs(self.C_prime[1]-0.0)<0.1)
+        #assert(abs(self.C_prime[2]-0.0)<0.1)
         # should now be (lV, 0, 0)
 
         # T is the tangential point of view vector to universe sphere

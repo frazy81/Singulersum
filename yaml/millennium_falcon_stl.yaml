@@ -18,9 +18,9 @@ animator:
     type: animation
     stop: 12.0
     start: 0.0
-    radius: 2.0
-    azimuth: time*30
-    altitude: !!str 30.0
+    spherical_radius: 2.0
+    spherical_azimuth: time*30
+    spherical_altitude: !!str 30.0
 cam1:
     type: camera
     position: [1.35, -0.73, -0.28]

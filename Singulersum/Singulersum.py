@@ -41,6 +41,7 @@
 # 2021-04-01 ph faster polygon_fill (using points()) in Draw2D
 # 2021-04-01 ph Singulersum subobject hierarchy fixes (positions, sizes)
 # 2021-04-02 ph scale is float (not tuple, one value for each axis anymore)
+# 2021-04-02 ph animation(): either x,y,z or spherical_radius, -azimuth, -altitude
 
 """
     class Singulersum.Singulersum()
@@ -76,6 +77,7 @@
 # TODO: zIndex of polygons. What's the zIndex of a line (currently unimplemented).
 #       Problem here is that currently all polygon pixels share the very same zIndex. How
 #       ever the zIndex changes within the polygon. Need a per pixel zIndex calculus
+# TODO: Camera x,y,z should actually also be in parent scale (not [-1;1])
 # NOTE: Naming convention: always use named parameters instead of something like
 #       point=(x,y,z). Easier for GUI (edit objects) and YAML
 
@@ -105,7 +107,7 @@
 # - 3D solar system Euler+ simulation
 # - iPhone X 3D face STL test
 # - Binocular tests, stereoview with two cameras
-# - VR360° videos
+# - VR360° videos (eg. youtube)
 
 # LEARNINGS:
 # - The performance killer (at least using python) is filling polygons. Current status: a
@@ -163,13 +165,13 @@ class Miniverse(VectorMath, Debug):
         self.debug("initialize new object "+str(self))
         for name in auto_fill:
             if name in args and hasattr(self, name):
-                if name is "size":
+                if name=="size":
                     args["size"] = float(args["size"])/self.parent.scale
-                if name is "x":
+                if name=="x":
                     args["x"] = float(args["x"])/self.parent.scale
-                if name is "y":
+                if name=="y":
                     args["y"] = float(args["y"])/self.parent.scale
-                if name is "z":
+                if name=="z":
                     args["z"] = float(args["z"])/self.parent.scale
                 self.debug(" * set "+name+" with "+str(args[name]))
                 setattr(self, name, args[name])
@@ -220,52 +222,52 @@ class Miniverse(VectorMath, Debug):
 
     # shaders that create a new Miniverse (inherit from Object)
 
-    def function(self, name=None, *kwargs, **args):
+    def function(self, *kwargs, **args):
         self.object_count += 1
-        if name is None:
-            name = "func#"+str(self.object_count)
+        if "name" not in args:
+            args["name"] = "func#"+str(self.object_count)
         obj = Function(self, *kwargs, **args)
-        self.objects[name]=obj
+        self.objects[args["name"]]=obj
         return obj
 
-    def sphere(self, name=None, *kwargs, **args):
+    def sphere(self, *kwargs, **args):
         self.object_count += 1
-        if name is None:
-            name = "sphere#"+str(self.object_count)
+        if "name" not in args:
+            args["name"] = "sphere#"+str(self.object_count)
         obj = Sphere(self, *kwargs, **args)
-        self.objects[name]=obj
+        self.objects[args["name"]]=obj
         return obj
 
-    def cube(self, name=None, *kwargs, **args):
+    def cube(self, *kwargs, **args):
         self.object_count += 1
-        if name is None:
-            name = "cube#"+str(self.object_count)
+        if "name" not in args:
+            args["name"] = "cube#"+str(self.object_count)
         obj = Cube(self, *kwargs, **args)
-        self.objects[name]=obj
+        self.objects[args["name"]]=obj
         return obj
 
-    def plane(self, name=None, *kwargs, **args):
+    def plane(self, *kwargs, **args):
         self.object_count += 1
-        if name is None:
-            name = "plane#"+str(self.object_count)
+        if "name" not in args:
+            args["name"] = "plane#"+str(self.object_count)
         obj = Plane(self, *kwargs, **args)
-        self.objects[name]=obj
+        self.objects[args["name"]]=obj
         return obj
 
-    def point(self, name=None, *kwargs, **args):
+    def point(self, *kwargs, **args):
         self.object_count += 1
-        if name is None:
-            name = "point#"+str(self.object_count)
+        if "name" not in args:
+            args["name"] = "point#"+str(self.object_count)
         obj = Point(self, *kwargs, **args)
-        self.objects[name]=obj
+        self.objects[args["name"]]=obj
         return obj
 
-    def object(self, name=None, *kwargs, **args):
+    def object(self, *kwargs, **args):
         self.object_count += 1
-        if name is None:
-            name = "obj#"+str(self.object_count)
+        if "name" not in args:
+            args["name"] = "obj#"+str(self.object_count)
         obj = Object(self, *kwargs, **args)
-        self.objects[name]=obj
+        self.objects[args["name"]]=obj
         return obj
 
     # camera and light
@@ -330,6 +332,14 @@ class Miniverse(VectorMath, Debug):
                 self.callback("set", name=name, value=value)
         return anonymousObject
 
+    def getObject(self, name):
+        obj = None
+        if name in self.cameras:
+            obj = self.cameras[name]
+        if name in self.objects:
+            obj = self.objects[name]
+        return obj
+
     def setPlace(self, x, y, z):
         x0=self.x
         y0=self.y
@@ -380,6 +390,7 @@ class Miniverse(VectorMath, Debug):
     def animation(self, **args):
         sg = self.sg
         args["time"] = self.getTime()
+        args["sg"] = self.parent
         self.debug("next animation cycle for {:s}, time:{:0.2f}".format(str(self), args["time"]))
         ox = self.x
         oy = self.y
@@ -403,46 +414,51 @@ class Miniverse(VectorMath, Debug):
                 self.sg.callback("animation_stop", object=self)
                 return False
 
+        roll = None
+
         type = "unknown"
         if "x" in args:
             type="absolute"
-            self.x = eval(args["x"], args)
+            self.x = eval(args["x"], globals(), args)
         if "y" in args:
             type="absolute"
-            self.y = eval(args["y"], args)
+            self.y = eval(args["y"], globals(), args)
         if "z" in args:
             type="absolute"
-            self.z = eval(args["z"], args)
-
-        if "radius" in args:
-            if type=="absolute":
-                self.debug("animation() got absolute and spherical information! Only have x,y,z set OR r,azimuth,altitude!")
-                exit(0)
-            type="spherical"
-            self.radius = eval(str(args["radius"]), args)
+            self.z = eval(args["z"], globals(), args)
         if "azimuth" in args:
-            if type=="absolute":
-                self.debug("animation() got absolute and spherical information! Only have x,y,z set OR r,azimuth,altitude!")
-                exit(0)
-            type="spherical"
-            self.azimuth = eval(str(args["azimuth"]), args)
+            self.azimuth = eval(args["azimuth"], globals(), args)
         if "altitude" in args:
+            self.altitude = eval(args["altitude"], globals(), args)
+        if "roll" in args:
+            self.roll = eval(args["roll"], globals(), args)
+
+        spherical_radius = None
+        spherical_azimuth = None
+        spherical_altitude = None
+
+        if "spherical_radius" in args:
             if type=="absolute":
                 self.debug("animation() got absolute and spherical information! Only have x,y,z set OR r,azimuth,altitude!")
                 exit(0)
             type="spherical"
-            self.altitude = eval(str(args["altitude"]), args)
-
-        if type=="unknown":
-            self.debug("animation() got no spherical or absolute information!")
-            exit(0)
-            return False
+            spherical_radius = eval(str(args["spherical_radius"]), globals(), args)
+        if "spherical_azimuth" in args:
+            if type=="absolute":
+                self.debug("animation() got absolute and spherical information! Only have x,y,z set OR r,azimuth,altitude!")
+                exit(0)
+            type="spherical"
+            spherical_azimuth = eval(str(args["spherical_azimuth"]), globals(), args)
+        if "spherical_altitude" in args:
+            if type=="absolute":
+                self.debug("animation() got absolute and spherical information! Only have x,y,z set OR r,azimuth,altitude!")
+                exit(0)
+            type="spherical"
+            spherical_altitude = eval(str(args["spherical_altitude"]), globals(), args)
 
         if type=="spherical":
-            self.debug("animation(), setPlaceSpherical(", self.azimuth, self.altitude, self.radius, ")")
-            self.setPlaceSpherical(self.azimuth, self.altitude, self.radius)
+            self.setPlaceSpherical(spherical_azimuth, spherical_altitude, spherical_radius)
         else:
-            self.debug("animation(), setPlace(", self.x, self.y, self.z, ")")
             self.setPlace(self.x, self.y, self.z)
 
         if ox==self.x and oy==self.y and oz==self.z:
@@ -499,6 +515,7 @@ class Miniverse(VectorMath, Debug):
             self.debug("updateFunction for "+str(self)+" not None. Calling the function.")
             if self.updateFunction(self) is True:
                 changed = True
+            self.debug(" * x:{:0.2f}, y:{:0.2f}, z:{:0.2f}, az:{:0.2f}, alt:{:0.2f}, rol:{:0.2f}".format(self.x, self.y, self.z, self.azimuth, self.altitude, self.roll))
         for name, obj in self.objects.items():
             if obj.update() is True:
                 changed = True
@@ -525,6 +542,7 @@ class Singulersum(Miniverse):
     # this only changes Functions and Objects, not Cameras and Lights!
 
     def __init__(self, *kwargs, **args):
+        args["name"] = "Singulersum"
         super().__init__(self, *kwargs, **args)
         self.fps       = 0
         self.timing    = "fix"  # rt=realtime or fix
@@ -577,13 +595,11 @@ class Singulersum(Miniverse):
         return self.time
 
     def boundingBoxShow(self, versum, context):
-        self.debug("showBoundingBox")
+        self.debug("showBoundingBox for "+str(versum))
+        self.debug("parent", str(versum.parent))
         bb_lines = []
 
         r = versum.size
-        x = versum.x
-        y = versum.y
-        z = versum.z
 
         # front
         p0 = (r, 0-r, r)
@@ -605,12 +621,13 @@ class Singulersum(Miniverse):
             [p4, p5, p6, p7],
         ]
         for lines in line_points:
-            # TODO: better way?
+            # TODO: true bounding box (max values used, not whole scale/miniverse-box)
             lines = self.applyContext(context, *lines)
-            bb_lines.append( [ lines[0], lines[1], "white", 0 ] )
-            bb_lines.append( [ lines[1], lines[2], "white", 0 ] )
-            bb_lines.append( [ lines[2], lines[3], "white", 0 ] )
-            bb_lines.append( [ lines[3], lines[0], "white", 0 ] )
+            # again: lines as p1, p2, color, thickness
+            bb_lines.append( [ lines[0], lines[1], "white", 1 ] )
+            bb_lines.append( [ lines[1], lines[2], "white", 1 ] )
+            bb_lines.append( [ lines[2], lines[3], "white", 1 ] )
+            bb_lines.append( [ lines[3], lines[0], "white", 1 ] )
 
         return bb_lines
 
@@ -645,8 +662,15 @@ class Singulersum(Miniverse):
             }
         isSpecialContext = self.isSpecialContext(context)
 
+        if self.parent.showOnlyBoundingBox is True:
+            lines.extend(self.boundingBoxShow(versum, context))
+
         for name, obj in versum.objects.items():
             # use K-means and implement multi core processing?
+
+            if isinstance(obj, Object):
+                # don't show lines, dots and polys...
+                self.debug(" * "+str(obj))
 
             if obj.visibility is False:
                 continue
@@ -654,7 +678,6 @@ class Singulersum(Miniverse):
             if self.parent.showOnlyBoundingBox is True:
                 if isinstance(obj, Line) or isinstance(obj, Dot) or isinstance(obj, Polygon) or isinstance(obj, CoordinateSystem):
                     continue
-                lines.extend(self.boundingBoxShow(obj, context))
 
             # BasicObjects
             if isinstance(obj, Line):
@@ -702,8 +725,17 @@ class Singulersum(Miniverse):
                     ppoints = p["points"]   # points reserved for points not polys!
                     normalvector = [ p["normalvector"][0], p["normalvector"][1], p["normalvector"][2] ]
                     if isSpecialContext:
-                        # TODO: no stretch, no translate, just rotate
-                        normalvector = self.applyContext(context, normalvector)[0]
+                        # Normalvectors just need rotation, no stretch, no translate!
+                        contextNormal = {
+                            "x"       : 0,
+                            "y"       : 0,
+                            "z"       : 0,
+                            "size"    : 1,
+                            "azimuth" : versum.azimuth,
+                            "altitude": versum.altitude,
+                            "roll"    : versum.roll,
+                        }
+                        normalvector = self.applyContext(contextNormal, normalvector)[0]
                     npoints = []
                     for pt in ppoints:
                         if isSpecialContext:
@@ -715,6 +747,8 @@ class Singulersum(Miniverse):
             else:
                 print("object type not known!")
                 exit(0)
+
+        self.debug("object_iterator end for "+str(versum))
 
         return (dots, lines, polys)
 
@@ -959,7 +993,7 @@ class Sphere(Object):
 
     def __init__(self, parent, r=1.0, amount=20, *kwargs, **args):
         super().__init__(parent, *kwargs, **args)
-        self.amount=amount
+        self.amount=int(amount)
         self.r = r
         self.createPolygons()
 

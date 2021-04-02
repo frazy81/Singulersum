@@ -34,12 +34,13 @@ class Draw(Tk):
         for y in range(100,200):
             self.draw2d.point(100,y)
             self.draw2d.point(200,y)
-        self.draw2d.line(97,97,203,97, "white")
-        self.draw2d.line(203,97,203,203, "white")
-        self.draw2d.line(203,203,97,203, "white")
-        self.draw2d.line(97,203,97,97, "white")
-        self.draw2d.line(100,100,200,200, "white")
-        self.draw2d.line(100,200,200,100, "white")
+
+        self.draw2d.line(97,97,203,97, "red", antialias=False)
+        self.draw2d.line(203,97,203,203, "red", antialias=False)
+        self.draw2d.line(203,203,97,203, "red", antialias=False)
+        self.draw2d.line(97,203,97,97, "red", antialias=False)
+        self.draw2d.line(100,100,200,200, "red", antialias=False)
+        self.draw2d.line(100,200,200,100, "red", antialias=False)
 
         poly = (
             (400,400),

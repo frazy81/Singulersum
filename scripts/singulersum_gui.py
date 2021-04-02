@@ -279,7 +279,6 @@ class SingulersumGUI(Tk):
         examplesmenu.add_command(label="utah teapot", command=lambda: self.openYaml("../yaml/utah_teapot_stl.yaml"))
         examplesmenu.add_command(label="millennium falcon", command=lambda: self.openYaml("../yaml/millennium_falcon_stl.yaml"))
         examplesmenu.add_command(label="heart curve", command=lambda: self.openYaml("../yaml/heart_curve.yaml"))
-        examplesmenu.add_command(label="star trek", command=lambda: self.openYaml("../yaml/star_trek.yaml"))
         examplesmenu.add_command(label="sink", command=lambda: self.openYaml("../yaml/sink.yaml"))
 
         menubar.add_cascade(label="Examples", menu=examplesmenu)
@@ -437,7 +436,7 @@ class SingulersumGUI(Tk):
         self.fpsNum.set("fps="+"{:0.2f}".format(self.sg.fps))
         self.camPos.set("cam=[{:0.2f}, {:0.2f}, {:0.2f}]".format(self.cam.x, self.cam.y, self.cam.z))
         self.viewVec.set("view at [{:0.2f}, {:0.2f}, {:0.2f}]".format(self.cam.V[0], self.cam.V[1], self.cam.V[2]))
-        self.sphericalVec.set("sherical [{:0.2f}, {:0.2f}, {:0.2f}]".format(self.cam.azimuth, self.cam.altitude, self.cam.radius))
+        self.sphericalVec.set("sherical [{:0.2f}, {:0.2f}, {:0.2f}]".format(self.cam.cam_azimuth, self.cam.cam_altitude, self.cam.cam_radius))
         self.update()
         self.update_idletasks()
 

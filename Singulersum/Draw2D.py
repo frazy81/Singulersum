@@ -221,7 +221,7 @@ class Draw2D(Debug):
             xd+=4
             xi+=1
 
-    def line(self, x0, y0, x1, y1, color="white", alpha=0, thickness=1, antialias=True, zIndex=None):
+    def line(self, x0, y0, x1, y1, color="white", alpha=0, thickness=1, antialias=False, zIndex=None):
         if thickness==1:
             if antialias is True:
                 return self.line_antialias(x0, y0, x1, y1, color=color, alpha=alpha, antialias=antialias, zIndex=zIndex)
@@ -240,11 +240,10 @@ class Draw2D(Debug):
             else:
                 adder=thickness/2
                 orient=False
-            self.line_bresenham(x0+adder, y0+adder, x1+adder, y1+adder, color, alpha, zIndex=zIndex)
+            self.line_bresenham(x0+adder, y0+adder, x1+adder, y1+adder, color=color, alpha=alpha, zIndex=zIndex)
             thickness-=1
 
-
-    def line_bresenham(self, x0, y0, x1, y1, color="white", alpha=0, antialias=True, zIndex=None):
+    def line_bresenham(self, x0, y0, x1, y1, color="white", alpha=0, antialias=False, zIndex=None):
         # Bresenham's line algorithm
         x0=int(x0)
         y0=int(y0)
@@ -260,7 +259,7 @@ class Draw2D(Debug):
             sy = 1
         err = dx+dy
         while True:
-            self.point(x0, y0, color, alpha, zIndex=zIndex)
+            self.point(x0, y0, color=color, alpha=alpha, zIndex=zIndex)
             if x0==x1 and y0==y1:
                 break
             e2 = 2*err

@@ -16,9 +16,9 @@ animator_rotate:
     type: animation
     stop: 12
     start: 0.0
-    radius: 1.0
-    azimuth: time*30
-    altitude: !!str 20.0
+    spherical_radius: 1.0
+    spherical_azimuth: time*30
+    spherical_altitude: !!str 20.0
 animator:
     # see Singulersum.py, "def animation()" for details on how to configure
     type: animation

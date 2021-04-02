@@ -53,6 +53,7 @@ class SingulersumYaml(Debug):
             nname = []
             nname.extend(name)
             nname.append(item)
+            self.debug("nname", nname, "parent", str(parent))
             if isinstance(value, dict):
                 if "type" in value:
                     self.namespaceSet(nname, self.singulersum_object(item, parent, value))
@@ -72,11 +73,12 @@ class SingulersumYaml(Debug):
         namespace["name"] = name
         obj = None
         assert("type" in namespace)
-        objtype = namespace["type"]
-        namespace.pop("type", None)    # delete the type
+        objtype = namespace.pop("type", None)    # delete the type
         update = namespace.pop("update", None)
         if update is not None:
             # update for all Miniverse objects (including Camera)
+            # TODO: make this able to be non-sequential, so that update in yaml can be
+            #       defined LATER than the object using it. Currently this brakes.
             namespace["update"]=self.namespace[update]
 
         # simple objects (inherit from BasicObject, don't have scale/size/x/y/z)
@@ -128,7 +130,9 @@ class SingulersumYaml(Debug):
             """
             type: stl
             file: ../stl/Utah_teapot.stl
-            place: [-1.0, -1.0, 0]
+            x: -1.0
+            y: -1.0
+            z: 0.0
             """
             file = namespace.pop("file", None)
             if file is None:
