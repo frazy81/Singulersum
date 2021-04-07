@@ -22,6 +22,7 @@ import struct
 from Singulersum.Debug import Debug
 
 # TODO: read colors from binary STL
+# TODO: use VectorMath.poly_normalvector to calculate normal vector if not given by STL
 
 class STL(Debug):
 
@@ -167,6 +168,19 @@ class STL(Debug):
             z       = vertex3[8:12]
             vertex3 = ( struct.unpack('<f', x)[0], struct.unpack('<f', y)[0], struct.unpack('<f', z)[0] )
             attr    = int.from_bytes(attr, byteorder="little", signed=False)
+            # get colors out of attr
+            color = None
+            if attr>>15==1:
+                #print("has color!")
+                # there are many color format definitions in STL!
+                r = attr & 31
+                g = (attr & 992) >> 5
+                b = (attr & 31744) >> 10
+                r = r << 3
+                g = g << 3
+                b = b << 3
+                color = (r, g, b)
+                color = None        # for now, stick with default
             for vertex in (vertex1,vertex2,vertex3):
                 if abs(vertex[0])>max[0]:
                     max[0]=abs(vertex[0])
@@ -174,7 +188,7 @@ class STL(Debug):
                     max[1]=abs(vertex[1])
                 if abs(vertex[2])>max[2]:
                     max[2]=abs(vertex[2])
-            self.addPolygon( vertex1, vertex2, vertex3, normalvector=normal )
+            self.addPolygon( vertex1, vertex2, vertex3, normalvector=normal, fill=color )
         f.close()
         self.debug("import of ", file, " completed.")
         self.debug("max +/-: {:0.2f} x {:0.2f} x {:0.2f}".format(max[0], max[1], max[2]))

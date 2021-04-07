@@ -26,6 +26,10 @@
     space. As of 2021-03-25 the Camera() class is contained in its own file (/Singulersum/Camera.py) for readability.
 """
 
+# TODO: camera view vector rotation can be done in Singulersum as well, so that no re-
+#       implementation is needed.
+# TODO: check if FOV calculus works (using a precalculated setup)
+
 from math import *
 
 from Singulersum.Singulersum import *
@@ -73,12 +77,15 @@ class Camera(Miniverse):
         # as of 2021-03-21 I changed the math concept so that the whole universe is
         # translated/rotated to a fix state where X-axis is directly looking into the
         # camera, Y-axis is streight to the right and Z-axis is going up.
+        # DocRef.10
         P_prime = self.rotate(P_prime, -180-self.view_azimuth, 0.0)
         P_prime = self.rotate(P_prime, 0.0, -1*self.view_altitude, self.roll)
 
         # displace so that the camera is at (0,0,0)
+        # DocRef.11
         P_prime = self.vec_sub(P_prime, self.C_prime)
 
+        # DocRef.12
         (x, y, z, distance) = self.project_p( P_prime )
         # NOTE: the distance is from P to P_prime! So shorter distance is CLOSER to
         #       the plane and MORE FAR away from Camera!
@@ -142,14 +149,17 @@ class Camera(Miniverse):
         self.debug("Camera position C:              ", self.vec_show(self.C))
         self.F = (self.x0,self.y0,self.z0) # camera focus (eg. center (0.0, 0.0, 0.0))
         self.debug("Camera focus F:                 ", self.vec_show(self.F))
+        # DocRef.1
         self.V = self.vec_sub(self.F,self.C) # view vector, C->F (eg. (-2.0, -1.0, 0.0) )
         self.debug("Camera View Vector V:           ", self.vec_show(self.V))
+        # DocRef.2
         self.lV = self.vec_len(self.V)     # view vector V length, sqrt(2**2+1**2+0**2)
         self.debug("View Vector length lV:          ", "{:4f}".format(self.lV))
 
         # from view vector, derive azimuth, altitude with regards to
         # the "fixed camera position": (cam_distance, 0, 0), where cam_distance is
         # sqrt(V_x**2+V_y**2+V_z**2)
+        # DocRef.3
         azimuth = atan2(self.V[1], self.V[0])
         if azimuth<0.0:
             azimuth = 2*pi+azimuth
@@ -158,7 +168,8 @@ class Camera(Miniverse):
         # coordinates of the camera! For calculus we need the azimuth, altitude and
         # radius of the view-vector alone!
         self.view_azimuth = azimuth/pi*180
-        self.view_radius  = self.lV
+        self.view_radius  = self.lV         # DocRef.2
+        # DocRef.4
         self.view_altitude = atan2(self.V[2], sqrt(self.V[0]**2+self.V[1]**2))/pi*180
         self.debug("View vector azimuth             ", "{:4f}".format(self.view_azimuth))
         self.debug("View vector altitude:           ", "{:4f}".format(self.view_altitude))
@@ -196,17 +207,20 @@ class Camera(Miniverse):
         # T is the tangential point of view vector to universe sphere
         # since our universe sphere has a radius of 1 and the reference point is (0,0,0),
         # the Tangential point (T) is equal to the normalized View Vector V_prime
+        # DocRef.6
         T = self.vec_mul_scalar(self.V_prime, 1/self.lV)
         self.debug("Tangential point T:             ", self.vec_show(T))
         self.debug("   T=V/lV, since universe sphere has r=1.0 and (0,0,0) is center.")
         # e is the "view plane" where each point is projected on
-        self.e = self.plane_normalvec(self.V_prime, T)
+        self.e = self.plane_normalvec(self.V_prime, T)  # DocRef.7, VectorMath.py
         self.debug("View plane e:                   ", self.plane_show(self.e))
         # camera view line: cl   (the "camera line" cl)
         # since the mapper_3d
-        cl = self.vec_line(self.C_prime, self.V_prime)
+        # DocRef.8, VectorMath.py
+        cl = self.vec_line(self.C_prime, self.V_prime)  # DocRef.8, VectorMath.py
         self.debug("Camera line cl:                 ", self.line_show(cl))
         # O', where we directly look at (camera position + lambda*view_vector)->e
+        # DocRef.9, VectorMath.py
         self.O_prime = self.line_plane_intersection(cl, self.e)
         self.debug("line plane intersection(cl, e): ", self.vec_show(self.O_prime))
         self.debug("   NOTE: vector now has 4 dimensions, where the 4th is the distance!")
@@ -224,6 +238,7 @@ class Camera(Miniverse):
         # 2021-03-21 ph NOTE that the smallest defines the FOV! So if the picture has
         #               aspect ratio of 4:3, then the Y-axis (in 2D) defines the FOV
         #               and the X-axis (2D) actually shows a broader FOV than set.
+        # DocRef.14
         Uy3d = (0,1,0)
         Uy3d_prime = self.project_p(Uy3d)
         Uz3d = (0,0,1)

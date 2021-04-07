@@ -34,7 +34,12 @@
     img = draw2d.image()    # RGBA bytes() image, each color is 8-bit encoded.
 """
 
-# TODO: zIndex for line is kind of undefined
+# TODO: alpha disabling zIndex (objects behind alpha polygon can be seen). This introduces
+#       a problem: the calculated color depends on what was drawn in sequence...
+# TODO: zIndex for line is kind of undefined and for polygons would need to be calculated
+#       for each pixel! Currently only a fixed calculated average zIndex per polygon.
+#       This is why a cube sometimes has z-fighting
+# TODO: line thickness is crappy implemented and does currently not work.
 
 import math
 import struct
@@ -134,11 +139,11 @@ class Draw2D(Debug):
         except IndexError:
             return (-1, -1, -1)
 
-    def getColor(self, color="white"):
+    def getColor(self, color=None):
         if color=="white":
             return (255, 255, 255)
         elif color=="black":
-            return (255, 255, 255)
+            return (0, 0, 0)
         elif color=="red":
             return (255, 0, 0)
         elif color=="green":
@@ -185,7 +190,7 @@ class Draw2D(Debug):
             if zIndex is not None:
                 self.zIndex(x, y, zIndex)
 
-    def points(self, x1, x2, y, color="white", alpha=0, zIndex=None):
+    def points(self, x1, x2, y, color=None, alpha=0, zIndex=None):
         # fill points between x1 and x2 in line y as fast as fast as possible. Optimizing
         # polygon throughput. This is basically the same code as point, but it does many
         # in a row at a time and this is much faster. Also because index checks are in
@@ -209,14 +214,14 @@ class Draw2D(Debug):
                 color2=int( alpha/255.0*b + (255-alpha)/255.0*color[2] )
                 color=(color0, color1, color2)
             show=True
-            if zIndex is not None:
+            if zIndex is not None and alpha==0:
                 if zIndexAt<zIndex:
                     show=False
             if show is True:
                 self.data[y][xd]=color[0]
                 self.data[y][xd+1]=color[1]
                 self.data[y][xd+2]=color[2]
-                if zIndex is not None:
+                if zIndex is not None and alpha==0: # no z-Index for alpha>0
                     self.zBuf[y][xi]=zIndex
             xd+=4
             xi+=1
@@ -229,16 +234,15 @@ class Draw2D(Debug):
                 return self.line_bresenham(x0, y0, x1, y1, color=color, alpha=alpha, antialias=antialias, zIndex=zIndex)
         # draw edge-lines with antialias, then "center" lines with bresenham
         if antialias is True:
-            self.line_antialias(x0-thickness/2, y0-thickness/2, x1-thickness/2, y1-thickness/2, color, alpha, zIndex=zIndex)
-            self.line_antialias(x0+thickness/2, y0+thickness/2, x1+thickness/2, y1+thickness/2, color, alpha, zIndex=zIndex)
+            self.line_antialias(x0-thickness/2, y0-thickness/2, x1-thickness/2, y1-thickness/2, color, alpha, True, zIndex=zIndex)
+            self.line_antialias(x0+thickness/2, y0+thickness/2, x1+thickness/2, y1+thickness/2, color, alpha, True, zIndex=zIndex)
         orient = False
-        while thickness/2>=1.0:
-            tx=0
+        while thickness/2.0>=1.0:
             if orient is False:
-                adder=-1*thickness/2
+                adder=-1*thickness/2.0
                 orient=True
             else:
-                adder=thickness/2
+                adder=thickness/2.0
                 orient=False
             self.line_bresenham(x0+adder, y0+adder, x1+adder, y1+adder, color=color, alpha=alpha, zIndex=zIndex)
             thickness-=1
@@ -271,6 +275,7 @@ class Draw2D(Debug):
                 y0 += sy
 
     def line_antialias(self, x0, y0, x1, y1, color="white", alpha=0, antialias=True, zIndex=None):
+        # Xiaolin Wu's antialias line algorithm
         if antialias is False:
             print("line_antialias() got antialias=False: should not have come to here.")
             exit(0)
@@ -278,7 +283,6 @@ class Draw2D(Debug):
             # this brakes line_antialias, gradient=float(dy)/float(dx), div by 0
             return False
             pass
-        # Xiaolin Wu's antialias line algorithm
         ipart = lambda x: math.floor(x)
         round = lambda x: ipart(x+0.5)
         fpart = lambda x: x-math.floor(x)
@@ -342,7 +346,7 @@ class Draw2D(Debug):
                 self.point(x, ipart(intery)+1, color=color, alpha=255-fpart(intery)*255, zIndex=zIndex)
                 intery=intery+gradient
 
-    def polygon_fill(self, *kwargs, fill="white", alpha=0, zIndex=None, fast=False):
+    def polygon_fill(self, *kwargs, fill=None, alpha=0, zIndex=None):
         # https://alienryderflex.com/polygon_fill/
         polyCorners=len(kwargs)
         # find min/max x, min/max y
@@ -403,8 +407,8 @@ class Draw2D(Debug):
                     self.points(nodeX[i], nodeX[i+1], y, color=fill, alpha=alpha, zIndex=zIndex)
 
     def polygon(self, *kwargs, fill=None, stroke=None, alpha=0, antialias=False, zIndex=None):
-        # NOTE: fill and stroke must be None, if not a None from outside results in the default
-        # color
+        # NOTE: fill and stroke must be None, if not a None from outside results in the
+        #       default color
         p0 = kwargs[0]
         pl = kwargs[0]
         # always fill for zIndex:
@@ -420,11 +424,6 @@ class Draw2D(Debug):
     def polygon_end(self):
         # signal threads that they may end
         self.poly_end = True
-
-    def magnify_testing(self, scalex, scaley):
-        # take the left/top most 20 pixel and magnify them
-        # TODO!
-        pass
 
     def image(self):
         # return image as rawimage RGBA, 4 Byte (bytes() array) per pixel

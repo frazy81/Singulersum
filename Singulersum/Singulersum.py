@@ -43,6 +43,8 @@
 # 2021-04-02 ph scale is float (not tuple, one value for each axis anymore)
 # 2021-04-02 ph animation(): either x,y,z or spherical_radius, -azimuth, -altitude
 # 2021-04-02 ph version checks (versions are now dates)
+# 2021-04-05 ph normal vector calculus corrected again (no translation, scaling, just
+#               rotation)
 
 """
     class Singulersum.Singulersum()
@@ -82,7 +84,6 @@
 #       Problem here is that currently all polygon pixels share the very same zIndex. How
 #       ever the zIndex changes within the polygon. Need a per pixel zIndex calculus
 # TODO: Camera x,y,z should actually also be in parent scale (not [-1;1])
-# TODO: Normalvector calculus fails again
 # TODO: change globals() in eval()! Security.
 
 # Main TODO:
@@ -95,15 +96,11 @@
 # - I guess there are still lots of bugs in the Miniverse placing (recursively place,
 #   rotate, translate and resize other Miniverses (such as Function() or Sphere()) into
 #   Singulersum)
+
+# possible later features:
 # - Maybe don't use polys at all, use a SurroundingPoly only.
 # - Game and Mobile version of Singulersum
-# - singulersum_video scenery.yaml -fps 30 scenery.mp4
-# - singulersum_animatedgif scenery.yaml -fps 30 scenery.gif
-# - singulersum_jpg scenery.yaml -time 0:20.5 -cam 1.0x0.1x0.3x0x0x0 scenery_20_5.jpg
-
-# TODO later:
 # - Debug verbousity
-# - Test suite (in progress)
 # - colors in STL's
 # - texture mapping
 # - 3D text
@@ -114,10 +111,11 @@
 # - VR360° videos (eg. youtube)
 
 # LEARNINGS:
-# - The performance killer (at least using python) is filling polygons. Current status: a
-#   bit improved
+# - The performance killer (at least using an interpreted language python) is filling
+#   polygons.
+# - alpha/transparency is a problem, since it depends on what was drawn in which sequence.
 # - fast array init essential: array.array("B", [0 for t in range(self.width*4) ] )
-# - STL is easy to read (both binary and textual)
+# - STL is fairly easy to read (both binary and textual)
 
 from PIL import Image
 from PIL import ImageDraw
@@ -131,6 +129,16 @@ from Singulersum.SingulersumYaml import SingulersumYaml
 from Singulersum.Debug import Debug
 from Singulersum.VectorMath import VectorMath
 
+"""
+    class Miniverse()
+
+    2021-03-17 ph Created by Philipp Hasenfratz
+
+    Every object (sphere, cube, plane, ...) is a miniverse. Even the Singulersum itself
+    inherits from Miniverse. Miniverse defined basic attributes of an object, such as
+    it's place in the Singulersum (x,y,z), it's azimuth (rotation angle around z-axis), it's altitude (rotation around y-axis) and roll (rotation around x-axis), the size of
+    the object (size) and the objects own reference coordinate system size (scale).
+"""
 class Miniverse(VectorMath, Debug):
 
     def __init__(self, parent, *kwargs, **args):
@@ -538,6 +546,9 @@ class Miniverse(VectorMath, Debug):
         # for making it Multithreading capable, must use function, not object property.
         return self.startTime-self.sg.startTime+self.sg.time
 
+"""
+    see beginning of this file to see comments on Singulersum.
+"""
 class Singulersum(Miniverse):
 
     version = "2021-04-02"
@@ -564,7 +575,7 @@ class Singulersum(Miniverse):
 
         self.showCoordinateSystem   = True
         self.showCenterOfView       = True
-        self.showBackside           = True       # highlight polygons if viewed from back
+        self.showBackside           = False      # highlight polygons if viewed from back
         self.showOnlyBoundingBox    = False      # for quick GUI animation, only BB'es
         self.useFastHiddenPolyCheck = False      # this is lossy!
         self.polyOnlyGrid           = False      # show only lines of polynoms
@@ -709,7 +720,17 @@ class Singulersum(Miniverse):
                     poly.append( p )
                 normalvector = obj.normalvector
                 if isSpecialContext:
-                    normalvector = self.applyContext(context, normalvector)[0]
+                    # normal vector MUST NOT be translated or scaled, just rotated!
+                    contextNormal = {
+                        "x"       : 0,
+                        "y"       : 0,
+                        "z"       : 0,
+                        "size"    : 1.0,
+                        "azimuth" : versum.azimuth,
+                        "altitude": versum.altitude,
+                        "roll"    : versum.roll,
+                    }
+                    normalvector = self.applyContext(contextNormal, normalvector)[0]
 
                 polys.append( { "points":poly, "normalvector":normalvector, "fill":obj.fill, "stroke":obj.stroke, "alpha":obj.alpha, "name":obj.name } )
             elif isinstance(obj, CoordinateSystem):
@@ -831,7 +852,7 @@ class BasicObject(Debug):
 class Object(Miniverse):
 
     """
-        Object().__init__(x, y, z)
+        Object().__init__(x=x, y=y, z=z)
 
         x, y, z is where the object will be placed into the parent context
     """
@@ -941,7 +962,6 @@ class Function(Object):
 
     def update(self):
         changed = False
-        # TODO: if x,y or z depend on time, then change polys here and return True!
         if self.dependsOnTime is True:
             # forget previous polygons and create new ones.
             self.objects = {}
@@ -1036,7 +1056,6 @@ class Sphere(Object):
                 cnt+=1
                 poly = self.polygon( corps[i][j], corps[i+1][j], corps[i+1][j+1], alpha=self.alpha, fill=self.fill, stroke=self.stroke)
                 poly2= self.polygon( corps[i][j], corps[i+1][j+1], corps[i][j+1], alpha=self.alpha, fill=self.fill, stroke=self.stroke)
-        # need to fix normal vectors.
         self.debug("polygon count for this sphere: ", cnt)
 
 class Cube(Object):
@@ -1146,9 +1165,9 @@ class CoordinateSystem(BasicObject):
     def __init__(self, parent, *kwargs, **args):
         super().__init__(parent, *kwargs, **args)
         scale = self.parent.scale
-        self.lineX = self.parent.line( 0.0, 0.0, 0.0, scale, 0, 0, color="green", thickness=1 )
-        self.lineY = self.parent.line( 0.0, 0.0, 0.0, 0, scale, 0, color="blue", thickness=1 )
-        self.lineZ = self.parent.line( 0.0, 0.0, 0.0, 0, 0, scale, color="red", thickness=1 )
+        self.lineX = self.parent.line( 0.0, 0.0, 0.0, scale, 0, 0, color="green", thickness=1, antialias=True )
+        self.lineY = self.parent.line( 0.0, 0.0, 0.0, 0, scale, 0, color="blue", thickness=1, antialias=True )
+        self.lineZ = self.parent.line( 0.0, 0.0, 0.0, 0, 0, scale, color="red", thickness=1, antialias=True )
         points = None
         if "points" in args:
             points = args["points"]

@@ -1,20 +1,47 @@
 # 2021-03-24 ph Created
 # 2021-04-02 ph scale is float (before: tuple)
 
+yaml:
+    application: Singulersum
+    url: https://github.com/frazy81/Singulersum
+    min-version: 2021-04-02
+    min-yaml-version: 2021-04-02
 gui:
-    animated: False
+    animated: True
     camera: cam1
 sg:
     scale: 5.0
-    showBackside: True
-    showOnlyBoundingBox: False
+    showBackside: False
     stop: 12
 cs:
     type: coordinatesystem
+animator:
+    # see Singulersum.py, "def animation()" for details on how to configure
+    type: animation
+    stop: 12
+    start: 0.0
+    #spherical_radius: 1.0
+    #spherical_azimuth: time*30
+    #spherical_altitude: !!str 20.0
+    radius: 1.0
+    azimuth: time*30
 cam1:
     type: camera
-    position: [1.1, 0.3, 0.2]
+    position: [1.0, 0.2, 0.4]
     lookat: [0.0, 0.0, 0.0]
+    #update: animator
+sphere:
+    type: sphere
+    r: 1.0
+    fill: blue
+    stroke: null
+testing:
+    type: object
+    update: animator
+    x: 0
+    y: 0
+    z: 0
+    scale: 5.0
 lighttest:
     type: polygon
     # right handed coordinate system. Points must go "counter clock wise" to generate a
@@ -25,8 +52,6 @@ lighttest:
         [0, 2, 2],
         [0, 0, 2]
     ]
-    # polygons don't have size/place! They are imported into the parent (singulersum)
-    # context.
 lighttest2:
     type: polygon
     # right handed coordinate system. Points must go "counter clock wise" to generate a
@@ -37,8 +62,4 @@ lighttest2:
         [2, 2, 0],
         [0, 2, 0],
     ]
-dot:
-    type: dot
-    x: 0.5
-    y: 3.5
-    z: 0.5
+    update: animator

@@ -29,8 +29,10 @@ class VectorMath(Debug):
         self.matrix_vector_product_2 = lambda M, v: [M[0][0]*v[0]+M[0][1]*v[1], M[1][0]*v[0]+M[1][1]*v[1]]
         self.matrix_vector_product_3 = lambda M, v: [ M[0][0]*v[0]+M[0][1]*v[1]+M[0][2]*v[2], M[1][0]*v[0]+M[1][1]*v[1]+M[1][2]*v[2], M[2][0]*v[0]+M[2][1]*v[1]+M[2][2]*v[2] ]
         # line(point_vector(list:x,y,z)), direction_vector(list:x,y,z))):
+        # DocRef.8
         self.vec_line = lambda point_vec, vector: [point_vec[0], point_vec[1], point_vec[2], vector[0], vector[1], vector[2]]
         self.line_calc = lambda line, lambd: [ line[0]+lambd*line[3], line[1]+lambd[4], line[2]+lambd[5] ]
+        # DocRef.13
         self.project_p = lambda point_vec: self.line_plane_intersection(self.vec_line(self.C_prime, self.vec_sub(point_vec, self.C_prime)), self.e)
 
     def vec_show(self, v):
@@ -51,6 +53,7 @@ class VectorMath(Debug):
         return str
 
     # returns (x',y',z', dist)
+    # DocRef.9
     def line_plane_intersection(self, line, plane):
         const = plane[0]*line[0]
         const += plane[1]*line[1]
@@ -73,6 +76,7 @@ class VectorMath(Debug):
             dist = -1*dist
         return [ line[0]+lambd*line[3], line[1]+lambd*line[4], line[2]+lambd*line[5], dist ]
 
+    # DocRef.7
     def plane_normalvec(self, normal_vector, point_vector):
         # plane_normalvec(normal_vector(list:(x,y,z)), point_on_plane(list:(x,y,z))):
         # return list:(a,b,c,d,Ox,Oy,Oz) so that: ax+by+cz=d, and O as primary vector
@@ -106,6 +110,7 @@ class VectorMath(Debug):
         return normalvector
 
     # rotate a 3D vector p by azimuth (0-360°), altitude (-90 to +90°), roll (-180° to +180°)
+    # DocRef.5
     def rotate(self, p, azimuth=0.0, altitude=0.0, roll=0.0):
         P_prime = p
         if azimuth is None:
