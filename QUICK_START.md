@@ -47,3 +47,7 @@ singulersum_video.py takes a .yaml file as input, renders the scene and outputs 
 ./singulersum_video.py -h
 
 ./singulersum_video.py -i ../yaml/cube.yaml -o ./testing.mov
+
+### examples in /outputs
+
+examples in /outputs are created by running /scripts/outputs_build.py without parameters.
