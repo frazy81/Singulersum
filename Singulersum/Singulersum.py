@@ -579,7 +579,7 @@ class Singulersum(Miniverse):
         self.showOnlyBoundingBox    = False      # for quick GUI animation, only BB'es
         self.showBoundingBox        = False      # show also bounding boxes around objs.
         self.useFastHiddenPolyCheck = False      # this is lossy!
-        self.polyOnlyGrid           = False      # show only lines of polynoms
+        self.polyOnlyGrid           = False      # show only lines of polygons
         self.polyOnlyPoint          = False      # show only point clouds
         self.polyGrid               = False
 
@@ -786,7 +786,7 @@ class Singulersum(Miniverse):
         self.debug("step 0: Singulersum().update() is updating the Singulersum for time="+str(self.time))
         timeit = self.timeit()
         changed = super().update()
-        if self.stop<=self.time:
+        if hasattr(self, "stop") and self.stop<=self.time:
             # force animation end
             changed = False
         if changed is False:

@@ -570,6 +570,19 @@ class SingulersumGUI(Tk):
         column=0
         row+=1
 
+        column=0
+        row+=1
+        label = Label(top, text="polyOnlyGrid")
+        label.grid(row=row, column=column, sticky=W)
+        column+=1
+        po = IntVar()
+        po.set(self.sg.polyOnlyGrid)
+        pock = Checkbutton(top, variable=po)
+        entries.append( { "object":self.sg, "name":"polyOnlyGrid", "value":po, "type":"b" } )
+        pock.grid(row=row, column=column, sticky=W)
+        column=0
+        row+=1
+
         button = Button(top, text="Apply", command=lambda: self.apply(top, entries, True))
         button.grid(row=row, column=column, sticky=W)
         column+=1

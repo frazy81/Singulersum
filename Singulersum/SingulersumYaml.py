@@ -1,5 +1,6 @@
 # 2021-03-22 ph Created
 # 2021-04-02 ph version check for Singulersum and SingulersumYaml
+# 2021-06-30 ph constants (constants section, all str, imported into sg)
 
 """
     class Singulersum.SingulersumYaml()
@@ -15,11 +16,14 @@
         min-yaml-specification: <yaml-class-version-it's-made-for>
 
     NOTE: callback event's are fired from Singulersum.py (when sg.yaml() is called)
+
+    2021-06-30: new section "constants" that will import constants into sg namespace. All of them must be specified as string (and will be run through eval())
 """
 
 # TODO: bad coding. yaml object must be defined in specific order. Eg. animation must
 #       preceed the camera, otherwise the update function is not known when camera is
 #       processed.
+# TODO: same class version as yaml version currently displays error.
 
 import struct
 import yaml
@@ -28,7 +32,7 @@ from Singulersum.Debug import Debug
 
 class SingulersumYaml(Debug):
 
-    version = "2021-04-02"
+    version = "2021-06-30"
 
     def __init__(self, parent, file=None, data=None):
         super().__init__()
@@ -51,6 +55,13 @@ class SingulersumYaml(Debug):
             exit(0)
         self.document = yaml.load(content, Loader=yaml.FullLoader)
         self.namespace["gui"]=self.document.pop("gui", None)
+        self.namespace["constants"]=self.document.pop("constants", None)
+        # import contants into sg (TODO: this should be done differently)
+        for name in self.namespace["constants"]:
+            val = self.namespace["constants"][name]
+            val = eval(val, globals())
+            setattr(self.parent.sg, name, val)
+            self.debug("constant", name, "imported into SG with value:", val)
         if "gui" in self.namespace and self.namespace["gui"] is not None:
             self.namespaceSet(["gui", "versionOk"], True)
         self.namespace["yaml"]=self.document.pop("yaml", None)
