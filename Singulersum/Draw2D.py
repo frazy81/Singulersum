@@ -35,7 +35,11 @@
 """
 
 # TODO: alpha disabling zIndex (objects behind alpha polygon can be seen). This introduces
-#       a problem: the calculated color depends on what was drawn in sequence...
+#       a problem: the calculated color depends on what was drawn in sequence... Further
+#       more polygons often share edges and thus are drawn twice (or more). This is why
+#       for a transparent object "grid lines" are becoming visible (it takes the color)
+#       of the last point drawn which was already to a degree transparent and recombines
+#       the colors.
 # TODO: zIndex for line is kind of undefined and for polygons would need to be calculated
 #       for each pixel! Currently only a fixed calculated average zIndex per polygon.
 #       This is why a cube sometimes has z-fighting

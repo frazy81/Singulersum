@@ -16,6 +16,8 @@
 # 2021-03-25 ph getopt
 # 2021-03-27 ph --quit-after / -q parameter (used in /tests/unittest_gui.py)
 # 2021-03-27 ph edit menu, add objects
+# 2021-04-29 ph open STL error: update() before showImage()
+# 2021-04-29 ph open file dialog: default to all files *.*
 
 """
     class SingulersumGUI() and program singulersum_gui.py
@@ -190,6 +192,7 @@ class SingulersumGUI(Tk):
             if self.isPlaying is False:
                 self.isShowing=False        # set early! if mouse event occurs in between
                 print("stop playing")
+                self.sg.update()    # stl air intake problem, no update before show
                 self.showImage()
                 self.update()
                 self.update_idletasks()
@@ -471,7 +474,7 @@ class SingulersumGUI(Tk):
             self.debug("don't know how to handle this file type (must be .yaml or .stl)", file)
 
     def openFile(self):
-        dlg = filedialog.Open(self, filetypes=(("YAML files", "*.yaml"), ("STL files", "*.stl"), ("all files", "*.*")))
+        dlg = filedialog.Open(self, filetypes=(("all files", "*.*"), ("YAML files", "*.yaml"), ("STL files", "*.stl")))
         file = dlg.show()
         self.open(file)
 
@@ -546,6 +549,26 @@ class SingulersumGUI(Tk):
         coordck.grid(row=row, column=column, sticky=W)
         column=0
         row+=1
+        label = Label(top, text="show bounding boxes")
+        label.grid(row=row, column=column, sticky=W)
+        column+=1
+        bbs = IntVar()
+        bbs.set(self.sg.showBoundingBox)
+        bbsck = Checkbutton(top, variable=bbs)
+        entries.append( { "object":self.sg, "name":"showBoundingBox", "value":bbs, "type":"b" } )
+        bbsck.grid(row=row, column=column, sticky=W)
+        column=0
+        row+=1
+        label = Label(top, text="show backside")
+        label.grid(row=row, column=column, sticky=W)
+        column+=1
+        bs = IntVar()
+        bs.set(self.sg.showBackside)
+        bsck = Checkbutton(top, variable=bs)
+        entries.append( { "object":self.sg, "name":"showBackside", "value":bs, "type":"b" } )
+        bsck.grid(row=row, column=column, sticky=W)
+        column=0
+        row+=1
 
         button = Button(top, text="Apply", command=lambda: self.apply(top, entries, True))
         button.grid(row=row, column=column, sticky=W)
@@ -568,6 +591,7 @@ class SingulersumGUI(Tk):
                 print("set", entry["name"], "to", val)
         if isinstance(top, Frame):
             self.settingsBrowser=False
+        self.isShowing=True
         top.destroy()
         self.guiUpdate()
 

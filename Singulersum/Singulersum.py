@@ -577,6 +577,7 @@ class Singulersum(Miniverse):
         self.showCenterOfView       = True
         self.showBackside           = False      # highlight polygons if viewed from back
         self.showOnlyBoundingBox    = False      # for quick GUI animation, only BB'es
+        self.showBoundingBox        = False      # show also bounding boxes around objs.
         self.useFastHiddenPolyCheck = False      # this is lossy!
         self.polyOnlyGrid           = False      # show only lines of polynoms
         self.polyOnlyPoint          = False      # show only point clouds
@@ -680,7 +681,7 @@ class Singulersum(Miniverse):
             }
         isSpecialContext = self.isSpecialContext(context)
 
-        if self.parent.showOnlyBoundingBox is True:
+        if self.parent.showOnlyBoundingBox is True or self.parent.showBoundingBox is True:
             lines.extend(self.boundingBoxShow(versum, context))
 
         for name, obj in versum.objects.items():
