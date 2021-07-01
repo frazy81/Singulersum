@@ -57,11 +57,12 @@ class SingulersumYaml(Debug):
         self.namespace["gui"]=self.document.pop("gui", None)
         self.namespace["constants"]=self.document.pop("constants", None)
         # import contants into sg (TODO: this should be done differently)
-        for name in self.namespace["constants"]:
-            val = self.namespace["constants"][name]
-            val = eval(val, globals())
-            setattr(self.parent.sg, name, val)
-            self.debug("constant", name, "imported into SG with value:", val)
+        if self.namespace["constants"] is not None:
+            for name in self.namespace["constants"]:
+                val = self.namespace["constants"][name]
+                val = eval(val, globals())
+                setattr(self.parent.sg, name, val)
+                self.debug("constant", name, "imported into SG with value:", val)
         if "gui" in self.namespace and self.namespace["gui"] is not None:
             self.namespaceSet(["gui", "versionOk"], True)
         self.namespace["yaml"]=self.document.pop("yaml", None)
